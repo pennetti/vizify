@@ -9,8 +9,8 @@
 
 var request = require('request'); // "Request" library
 
-var client_id = '03ffe0cac0a0401aa6673c3cf6d02ced'; // Your client id
-var client_secret = 'a57c43efb9644574a96d6623fb8bfbc2'; // Your client secret
+var client_id = 'd7a061eff44a40f89b2cc19aec7e2bd4'; // Your client id
+var client_secret = 'd99700cc77b140449953e5d51ed7e2b2'; // Your client secret
 var redirect_uri = 'http://localhost:8888/callback'; // Your redirect uri
 
 // your application requests authorization
