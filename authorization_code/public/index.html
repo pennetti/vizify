@@ -24,6 +24,7 @@
       </div>
       <div id="loggedin">
         <div id="user-profile"></div>
+        <button class="btn btn-primary" id="vizify">Vizify</button>
       </div>
     </div>
 
@@ -76,6 +77,11 @@
             refresh_token = params.refresh_token,
             error = params.error;
 
+        // List of tuples where (key, value) is (artist name, times found).
+        // This will allow sorting to find a user's top artists (artists
+        // with the most tracks).
+        var allUserArtists = {};
+
         function callSpotifyWebAPI(url, data, callback) {
           $.ajax({
             url: url,
@@ -101,6 +107,109 @@
           callSpotifyWebAPI('https://api.spotify.com/v1/me/tracks', {}, callback);
         }
 
+        function processTracks(tracks, numTracksLoaded) {
+// TODO: consider saving the total size and length
+// TODO: add loading bar/ number/ percent
+// Check if 'tracks' is empty (i.e. user has no tracks in library)
+          if (tracks.offset == 0) {
+            // No tracks!
+          }
+
+          // console.log(tracks);
+          numTracksLoaded += tracks.items.length;
+
+          $.each(tracks.items, function(index, item) {
+// TODO: get ALL artists, not just the first one?
+            var artistName = item.track.artists[0].name;
+            if (artistName in allUserArtists) {
+              allUserArtists[artistName]++;
+            } else {
+              allUserArtists[artistName] = 1;
+            }
+          });
+
+          if (tracks.next) {
+            callSpotifyWebAPI(tracks.next, {}, function(tracks) {
+              processTracks(tracks, numTracksLoaded);
+            });
+          }
+
+          console.log('loaded: ' + numTracksLoaded);
+          console.log('total:  ' + tracks.total);
+
+          if (numTracksLoaded == tracks.total) {
+            // All tracks have been loaded, put in db and make viz
+            console.log(allUserArtists);
+            sortUserArtists(allUserArtists);
+          }
+        }
+
+        function sortUserArtists(artists) {
+          // Sorting...
+          //
+          // Will sort user artists by the number of tracks the user has for
+          // that artist in their library.  the logic is that the user will have
+          // the most tracks from their favorite artist, but it might be more
+          // logical to do a percentage of the total tracks
+          //
+          // Source: http://stackoverflow.com/questions/5199901/how-to-sort-an-associative-array-by-its-values-in-javascript
+          var sortedArtists = [];
+
+          for (var artist in artists) {
+            sortedArtists.push([artist, artists[artist]]);
+          }
+
+          sortedArtists.sort(function(a, b) {
+            a = a[1]
+            b = b[1]
+
+            return a < b ? -1 : (a > b ? 1 : 0);
+          });
+
+          for (var i = 0; i < sortedArtists.length; i++) {
+            var artistName = sortedArtists[i][0],
+                // Might use number of tracks as a weight to determine how much
+                // the user likes that genre, maybe not
+                numArtistTracks = sortedArtists[i][1];
+
+// TODO: ajax call to echo nest to determine allowed number of calls
+// for the artist
+          }
+        }
+
+        function getRateLimitRemaining() {
+          var geturl;
+          geturl = $.ajax({
+            type: 'GET',
+            crossDomain: true,
+            headers: {
+              'Access-Control-Allow-Origin': '*',
+              'Access-Control-Allow-Headers': 'Origin, X-Requested-With, Content-Type, Accept'
+            },
+            url: 'http://developer.echonest.com/api/v4/artist/profile?api_key=VO9NDXU6IZBMOMI2X&name=weezer',
+            beforeSend: function(xhr) {
+              xhr.withCredentials = true;
+            },
+            success: function(data, textStatus, response) {
+              console.log(data);
+              console.log(textStatus);
+              console.log(response.getAllResponseHeaders());
+              console.log(geturl.getAllResponseHeaders());
+              console.log(response.getResponseHeader('X-Ratelimit-Remaining'));
+
+            },
+            async: false,
+            complete: function (XMLHttpRequest, textStatus) {
+                var headers = XMLHttpRequest.getAllResponseHeaders();
+                console.log('******');
+                console.log(headers);
+            },
+            error: function(response) {
+              //
+            }
+          });
+        }
+
         if (error) {
           alert('There was an error during the authentication');
         } else {
@@ -108,17 +217,26 @@
             getUserProfile(
               function(response) {
                 userProfilePlaceholder.innerHTML = userProfileTemplate(response);
-                console.log('*' + response);
+
                 $('#login').hide();
                 $('#loggedin').show();
-              }
-            );
+              });
           } else {
             // render initial screen
             $('#login').show();
             $('#loggedin').hide();
           }
         }
+
+        document.getElementById('vizify').addEventListener('click', function() {
+          getUserTracks(
+            function(response) {
+              processTracks(response, 0);
+              getRateLimitRemaining();
+            }
+          );
+        });
+
       })();
     </script>
   </body>
