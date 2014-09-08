@@ -46,7 +46,7 @@ app.get('/login', function(req, res) {
     }));
 });
 
-app.get('/callback', function(req, res) {
+app.all('/callback', function(req, res) {
 
   // your application requests refresh and access tokens
   // after checking the state parameter
@@ -54,6 +54,9 @@ app.get('/callback', function(req, res) {
   var code = req.query.code || null;
   var state = req.query.state || null;
   var storedState = req.cookies ? req.cookies[stateKey] : null;
+
+  res.header("Access-Control-Allow-Origin", "*");
+  res.header("Access-Control-Allow-Headers", "Accept, Origin, X-Requested-With, Content-Type");
 
   if (state === null || state !== storedState) {
     res.redirect('/#' +
@@ -89,6 +92,22 @@ app.get('/callback', function(req, res) {
         // use the access token to access the Spotify Web API
         request.get(options, function(error, response, body) {
           console.log(body);
+        });
+
+        var options = {
+          url: 'http://developer.echonest.com/api/v4/artist/profile?api_key=VO9NDXU6IZBMOMI2X&name=weezer',
+          crossDomain: true,
+          json: false
+        };
+
+        // use the access token to access the Spotify Web API
+        request.get(options, function(error, response, body) {
+          console.log('********')
+          console.log(body);
+          console.log(response);
+          console.log(response.headers);
+          console.log('$$$$$$$$');
+          console.log(response.headers['x-ratelimit-remaining']);
         });
 
         // we can also pass the token to the browser to make requests from there
