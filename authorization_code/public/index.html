@@ -77,12 +77,10 @@
             refresh_token = params.refresh_token,
             error = params.error;
 
-        // List of tuples where (key, value) is (artist name, times found).
-        // This will allow sorting to find a user's top artists (artists
-        // with the most tracks).
-        var allUserArtists = {};
+        var allUserArtistIds = {}
+            allArtistGenres = {};
 
-        function callSpotifyWebAPI(url, data, callback) {
+        function callSpotifyWebAPI (url, data, callback) {
           $.ajax({
             url: url,
             dataType: 'json',
@@ -107,26 +105,40 @@
           callSpotifyWebAPI('https://api.spotify.com/v1/me/tracks', {}, callback);
         }
 
+        function getArtist(id, callback) {
+          callSpotifyWebAPI('https://api.spotify.com/v1/artists/' + id, {}, callback);
+        }
+
+        function initProcessTracks(tracks) {
+          processTracks(tracks, 0);
+        }
+
         function processTracks(tracks, numTracksLoaded) {
-// TODO: consider saving the total size and length
-// TODO: add loading bar/ number/ percent
-// Check if 'tracks' is empty (i.e. user has no tracks in library)
+
+          var artistId = '',
+              numTracks = tracks.total;
+
+          // Check if 'tracks' is empty (i.e. user has no tracks in library)
           if (tracks.offset == 0) {
             // No tracks!
           }
 
-          // console.log(tracks);
+          // Update progress
           numTracksLoaded += tracks.items.length;
+          // percent = numTracksLoaded / numTracks
+          console.log((numTracksLoaded / numTracks * 100) + '%');
 
-          $.each(tracks.items, function(index, item) {
-// TODO: get ALL artists, not just the first one?
-            var artistName = item.track.artists[0].name;
-            if (artistName in allUserArtists) {
-              allUserArtists[artistName]++;
-            } else {
-              allUserArtists[artistName] = 1;
+          for (var i = 0; i < tracks.items.length; i++) {
+            while (artist = tracks.items[i].track.artists.pop()) {
+              artistId = artist.id;
+              if (artistId in allUserArtistIds) {
+                allUserArtistIds[artistId].count++;
+              } else {
+                allUserArtistIds[artistId] = artist;
+                allUserArtistIds[artistId].count = 1;
+              }
             }
-          });
+          }
 
           if (tracks.next) {
             callSpotifyWebAPI(tracks.next, {}, function(tracks) {
@@ -134,47 +146,53 @@
             });
           }
 
-          console.log('loaded: ' + numTracksLoaded);
-          console.log('total:  ' + tracks.total);
-
-          if (numTracksLoaded == tracks.total) {
-            // All tracks have been loaded, put in db and make viz
-            console.log(allUserArtists);
-            sortUserArtists(allUserArtists);
+          if (numTracksLoaded == numTracks) {
+            console.log(allUserArtistIds);
+            getGenreData(allUserArtistIds);
           }
+
         }
 
-        function sortUserArtists(artists) {
-          // Sorting...
-          //
-          // Will sort user artists by the number of tracks the user has for
-          // that artist in their library.  the logic is that the user will have
-          // the most tracks from their favorite artist, but it might be more
-          // logical to do a percentage of the total tracks
-          //
-          // Source: http://stackoverflow.com/questions/5199901/how-to-sort-an-associative-array-by-its-values-in-javascript
-          var sortedArtists = [];
+        /**
+         * Sorting...
+         *
+         * Will sort user artists by the number of tracks the user has for
+         * that artist in their library.  the logic is that the user will have
+         * the most tracks from their favorite artist, but it might be more
+         * logical to do a percentage of the total tracks
+         *
+         * Source: http://stackoverflow.com/questions/5199901/how-to-sort-an-associative-array-by-its-values-in-javascript
+         */
+        function getSortedArtistIds(artists) {
 
-          for (var artist in artists) {
-            sortedArtists.push([artist, artists[artist]]);
-          }
-
-          sortedArtists.sort(function(a, b) {
-            a = a[1]
-            b = b[1]
+          return Object.keys(artists).sort(function(a, b) {
+            a = artists[a].count
+            b = artists[b].count
 
             return a < b ? -1 : (a > b ? 1 : 0);
           });
+        }
 
-          for (var i = 0; i < sortedArtists.length; i++) {
-            var artistName = sortedArtists[i][0],
-                // Might use number of tracks as a weight to determine how much
-                // the user likes that genre, maybe not
-                numArtistTracks = sortedArtists[i][1];
+        function getGenreData(artists) {
+          // TODO: All tracks have been loaded, put in db and make viz
 
-// TODO: ajax call to echo nest to determine allowed number of calls
-// for the artist
+          var sortedArtistIds = getSortedArtistIds(artists),
+              numArtists = artists.length * 0.75;
+
+          console.log(artists);
+
+          for (var i = 0; i < numArtists; i++) {
+            while (genre = artists[sortedArtistIds[i]].genres.pop()) {
+              if (genre in allArtistGenres) {
+                allArtistGenres[genre]++;
+              } else {
+                allArtistGenres[genre] = 1;
+              }
+            }
           }
+
+          console.log(allArtistGenres);
+
         }
 
         if (error) {
@@ -197,9 +215,8 @@
 
         document.getElementById('vizify').addEventListener('click', function() {
           getUserTracks(
-            function(response) {
-              processTracks(response, 0);
-              //getRateLimitRemaining();
+            function(tracks) {
+              initProcessTracks(tracks);
             }
           );
         });
