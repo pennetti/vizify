@@ -28,6 +28,8 @@
       </div>
     </div>
 
+    <!-- TODO: add nav-bar and hero-unit here with button -->
+
     <script id="user-profile-template" type="text/x-handlebars-template">
       <h1>Logged in as {{display_name}}</h1>
       <div class="media">
@@ -52,6 +54,12 @@
     <script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
     <script>
       (function() {
+
+        // TODO: make a dynamic animation (i.e. update the model each time new
+        // data is entered)
+
+        // http://stackoverflow.com/questions/12206885/what-is-cleanest-way-to-turn-array-of-jquery-promises-into-a-jquery-promise-of-a
+        $.whenall = function(arr) { return $.when.apply($, arr); };
 
         /**
          * Obtains parameters from the hash of the URL
@@ -81,7 +89,7 @@
             allArtistGenres = {};
 
         function callSpotifyWebAPI (url, data, callback) {
-          $.ajax({
+          return $.ajax({
             url: url,
             dataType: 'json',
             data: data,
@@ -98,15 +106,18 @@
         }
 
         function getUserProfile(callback) {
-          callSpotifyWebAPI('https://api.spotify.com/v1/me', {}, callback);
+          return callSpotifyWebAPI(
+            'https://api.spotify.com/v1/me', {}, callback);
         }
 
         function getUserTracks(callback) {
-          callSpotifyWebAPI('https://api.spotify.com/v1/me/tracks', {}, callback);
+          return callSpotifyWebAPI(
+            'https://api.spotify.com/v1/me/tracks', {}, callback);
         }
 
         function getArtist(id, callback) {
-          callSpotifyWebAPI('https://api.spotify.com/v1/artists/' + id, {}, callback);
+          return callSpotifyWebAPI(
+            'https://api.spotify.com/v1/artists/' + id, {}, callback);
         }
 
         function initProcessTracks(tracks) {
@@ -125,7 +136,6 @@
 
           // Update progress
           numTracksLoaded += tracks.items.length;
-          // percent = numTracksLoaded / numTracks
           console.log((numTracksLoaded / numTracks * 100) + '%');
 
           for (var i = 0; i < tracks.items.length; i++) {
@@ -147,10 +157,8 @@
           }
 
           if (numTracksLoaded == numTracks) {
-            console.log(allUserArtistIds);
             getGenreData(allUserArtistIds);
           }
-
         }
 
         /**
@@ -164,7 +172,6 @@
          * Source: http://stackoverflow.com/questions/5199901/how-to-sort-an-associative-array-by-its-values-in-javascript
          */
         function getSortedArtistIds(artists) {
-
           return Object.keys(artists).sort(function(a, b) {
             a = artists[a].count
             b = artists[b].count
@@ -177,22 +184,35 @@
           // TODO: All tracks have been loaded, put in db and make viz
 
           var sortedArtistIds = getSortedArtistIds(artists),
-              numArtists = artists.length * 0.75;
-
-          console.log(artists);
+              numArtists = Object.keys(artists).length * 0.5,
+              artistGenres = [],
+              promises = [];
 
           for (var i = 0; i < numArtists; i++) {
-            while (genre = artists[sortedArtistIds[i]].genres.pop()) {
-              if (genre in allArtistGenres) {
-                allArtistGenres[genre]++;
-              } else {
-                allArtistGenres[genre] = 1;
+            promises.push(getArtist(sortedArtistIds[i], function(artist) {
+              artistGenres = artist.genres; // Does this need to be saved?
+              console.log(artist.genres);
+              while (genre = artistGenres.pop()) {
+                if (genre in allArtistGenres) {
+                  console.log(genre);
+                  allArtistGenres[genre]++;
+                } else {
+                  console.log(genre);
+                  allArtistGenres[genre] = 1;
+                }
               }
-            }
+            }));
           }
 
-          console.log(allArtistGenres);
+          // TODO: return list after all artists have been processed (when 'for' loop is done)
+          $.whenall(promises).done(function() {
+            console.log(allArtistGenres);
+            vizify(allArtistGenres)
+          });
+        }
 
+        function vizify(data) {
+          // draw stuff with the data
         }
 
         if (error) {
@@ -205,7 +225,8 @@
 
                 $('#login').hide();
                 $('#loggedin').show();
-              });
+              }
+            );
           } else {
             // render initial screen
             $('#login').show();
