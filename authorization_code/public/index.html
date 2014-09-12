@@ -2,7 +2,9 @@
 <html>
   <head>
     <title>Vizify</title>
-    <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css">
+    <!-- <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css"> -->
+    <link type="text/css" href="styles.css" rel="stylesheet" />
+    <link type="text/css" href="sp-bootstrap.css" rel="stylesheet" media="screen">
     <style type="text/css">
       #login, #loggedin {
         display: none;
@@ -23,14 +25,34 @@
         <a href="/login" class="btn btn-primary">Log in with Spotify</a>
       </div>
       <div id="loggedin">
-        <div id="user-profile"></div>
-        <button class="btn btn-primary" id="vizify">Vizify</button>
+        <!-- TODO: Everything below should go in this div -->
       </div>
     </div>
 
-    <!-- TODO: add nav-bar and hero-unit here with button -->
+    <div class="navbar navbar-default navbar-fixed-top" role="navigation">
+      <div class="container">
+        <div class="navbar-header">
+          <a class="navbar-brand" href="#"><span>&nbsp;Vizify&nbsp;</span></a>
+        </div>
+        <div class="collapse navbar-collapse">
+          <ul id="options" class="nav navbar-nav navbar-right">
+            <li><a class="option" href="http://musicmachinery.com/2014/06/24/the-set-listener/" id='show-about'>About</a></li>
+          </ul>
+        </div>
+      </div>
+    </div>
 
-    <script id="user-profile-template" type="text/x-handlebars-template">
+
+    <div id="search" class="hero-unit">
+      <div class="container">
+        <h1> Vizify </h1>
+        <p class="lead">Visualize your Spotify collection.</p>
+        <button class="btn btn-info btn-large" id="vizify" type="button">  Go </button>
+        <div id="info"> </div>
+      </div>
+    </div>
+
+    <!-- <script id="user-profile-template" type="text/x-handlebars-template">
       <h1>Logged in as {{display_name}}</h1>
       <div class="media">
         <div class="pull-left">
@@ -48,7 +70,7 @@
           </dl>
         </div>
       </div>
-    </script>
+    </script> -->
 
     <script src="//cdnjs.cloudflare.com/ajax/libs/handlebars.js/2.0.0-alpha.1/handlebars.min.js"></script>
     <script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
@@ -81,9 +103,9 @@
           return hashParams;
         }
 
-        var userProfileSource = document.getElementById('user-profile-template').innerHTML,
-            userProfileTemplate = Handlebars.compile(userProfileSource),
-            userProfilePlaceholder = document.getElementById('user-profile');
+        // var userProfileSource = document.getElementById('user-profile-template').innerHTML,
+        //     userProfileTemplate = Handlebars.compile(userProfileSource),
+        //     userProfilePlaceholder = document.getElementById('user-profile');
 
         var params = getHashParams();
 
@@ -161,12 +183,7 @@
               processTracks(tracks, numTracksLoaded);
             });
           } else {
-            console.log('$');
             getGenreData(allUserArtistIds);
-          }
-
-          if (numTracksLoaded == numTracks) {
-            console.log('*');
           }
         }
 
@@ -191,6 +208,7 @@
 
         function getGenreData(artists) {
           // TODO: All tracks have been loaded, put in db and make viz
+          // TODO: this function is broken
 
           var sortedArtistIds = getSortedArtistIds(artists),
               numArtists = Object.keys(artists).length * 0.5,
@@ -200,7 +218,7 @@
           for (var i = 0; i < numArtists; i++) {
             promises.push(getArtist(sortedArtistIds[i], function(artist) {
               artistGenres = artist.genres; // Does this need to be saved?
-              console.log(artist.genres);
+              console.log(artist);
               while (genre = artistGenres.pop()) {
                 if (genre in allArtistGenres) {
                   console.log(genre);
@@ -230,7 +248,7 @@
           if (access_token) {
             getUserProfile(
               function(response) {
-                userProfilePlaceholder.innerHTML = userProfileTemplate(response);
+                // userProfilePlaceholder.innerHTML = userProfileTemplate(response);
 
                 $('#login').hide();
                 $('#loggedin').show();

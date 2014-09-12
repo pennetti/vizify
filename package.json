@@ -1,7 +1,7 @@
 {
-  "author": "Doozer",
-  "name": "web-api-code-example",
-  "description": "Basic examples of the Spotify authorization flows through oAuth2",
+  "author": "pennetti",
+  "name": "vizify",
+  "description": "Data visualization or graph to show the genre distribution of user collection.",
   "version": "0.0.1",
   "main": "app.js",
   "dependencies": {
