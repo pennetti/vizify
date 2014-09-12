@@ -58,6 +58,12 @@
         // TODO: make a dynamic animation (i.e. update the model each time new
         // data is entered)
 
+        /**
+         * Generates a random string containing numbers and letters
+         * @param  {number} length The length of the string
+         * @return {string} The generated string
+         */
+
         // http://stackoverflow.com/questions/12206885/what-is-cleanest-way-to-turn-array-of-jquery-promises-into-a-jquery-promise-of-a
         $.whenall = function(arr) { return $.when.apply($, arr); };
 
@@ -154,10 +160,13 @@
             callSpotifyWebAPI(tracks.next, {}, function(tracks) {
               processTracks(tracks, numTracksLoaded);
             });
+          } else {
+            console.log('$');
+            getGenreData(allUserArtistIds);
           }
 
           if (numTracksLoaded == numTracks) {
-            getGenreData(allUserArtistIds);
+            console.log('*');
           }
         }
 
