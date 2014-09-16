@@ -3,9 +3,11 @@ var request = require('request'); // "Request" library
 var querystring = require('querystring');
 var cookieParser = require('cookie-parser');
 
-var client_id     = 'd7a061eff44a40f89b2cc19aec7e2bd4'; // Your client id
-var client_secret = 'd99700cc77b140449953e5d51ed7e2b2'; // Your client secret
+var spotifyApi = require('./spotify.js');
+
+var client_id = 'd7a061eff44a40f89b2cc19aec7e2bd4'; // Your client id
 var redirect_uri  = 'http://localhost:8888/callback'; // Your redirect uri
+var client_secret = 'd99700cc77b140449953e5d51ed7e2b2'; // Your client secret
 
 /**
  * Generates a random string containing numbers and letters
@@ -13,8 +15,8 @@ var redirect_uri  = 'http://localhost:8888/callback'; // Your redirect uri
  * @return {string} The generated string
  */
 var generateRandomString = function(length) {
-  var text = '';
-  var possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
+  var text = '',
+      possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
 
   for (var i = 0; i < length; i++) {
     text += possible.charAt(Math.floor(Math.random() * possible.length));
