@@ -2,7 +2,6 @@
 <html>
   <head>
     <title>Vizify</title>
-    <!-- <link rel="stylesheet" href="//netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css"> -->
     <link type="text/css" href="styles.css" rel="stylesheet" />
     <link type="text/css" href="sp-bootstrap.css" rel="stylesheet" media="screen">
     <style type="text/css">
@@ -19,36 +18,33 @@
   </head>
 
   <body>
-
     <div class="container">
       <div id="login">
-        <h1>This is an example of the Authorization Code flow</h1>
+        <!-- TODO: put in cool login page -->
+        <h1>Log in to get started.</h1>
         <a href="/login" class="btn btn-primary">Log in with Spotify</a>
       </div>
-      <div id="loggedin">
-        <!-- TODO: Everything below should go in this div -->
-      </div>
     </div>
-
-    <div class="navbar navbar-default navbar-fixed-top" role="navigation">
-      <div class="container">
-        <div class="navbar-header">
-          <a class="navbar-brand" href="#"><span>&nbsp;Vizify&nbsp;</span></a>
-        </div>
-        <div class="collapse navbar-collapse">
-          <ul id="options" class="nav navbar-nav navbar-right">
-            <li><a class="option" href="http://musicmachinery.com/2014/06/24/the-set-listener/" id='show-about'>About</a></li>
-          </ul>
+    <div id="loggedin">
+      <div class="navbar navbar-default navbar-fixed-top" role="navigation">
+        <div class="container">
+          <div class="navbar-header">
+            <a class="navbar-brand" href="#"><span>&nbsp;Vizify&nbsp;</span></a>
+          </div>
+          <div class="collapse navbar-collapse">
+            <ul id="options" class="nav navbar-nav navbar-right">
+              <li><a class="option" href="#" id='show-about'>About</a></li>
+            </ul>
+          </div>
         </div>
       </div>
-    </div>
-
-    <div id="hero" class="hero-unit">
-      <div class="container">
-        <h1> Vizify </h1>
-        <p class="lead">Visualize your Spotify collection.</p>
-        <button class="btn btn-info btn-large" id="vizify" type="button">  Go </button>
-        <div id="info"> </div>
+      <div id="hero" class="hero-unit">
+        <div class="container">
+          <h1> Vizify </h1>
+          <p class="lead">Visualize your Spotify collection.</p>
+          <button class="btn btn-info btn-large" id="vizify" type="button">  Go </button>
+          <div id="info"> </div>
+        </div>
       </div>
     </div>
 
@@ -66,8 +62,13 @@
          * @return {string} The generated string
          */
 
-        // http://stackoverflow.com/questions/12206885/what-is-cleanest-way-to-turn-array-of-jquery-promises-into-a-jquery-promise-of-a
+        // http://stackoverflow.com/a/12206897/854645
         $.whenall = function(arr) { return $.when.apply($, arr); };
+
+        //  http://stackoverflow.com/a/1145525/854645
+        String.prototype.replaceAll = function (search, replacement) {
+          return this.split(search).join(replacement);
+        };
 
         /**
          * Obtains parameters from the hash of the URL
@@ -114,12 +115,14 @@
             'https://api.spotify.com/v1/me', {}, callback);
         }
 
-        function getUserTracks(callback) {
+        // test if default variables work
+        function getUserTracks(offset, limit, callback) {
           return callSpotifyWebAPI(
-            'https://api.spotify.com/v1/me/tracks', {}, callback);
+            'https://api.spotify.com/v1/me/tracks?limit=' + limit +
+            '&offset=' + offset, {}, callback);
         }
 
-        function getArtist(id, callback) {
+        function getArtistById(id, callback) {
           return callSpotifyWebAPI(
             'https://api.spotify.com/v1/artists/' + id, {}, callback);
         }
@@ -128,9 +131,11 @@
           processTracks(tracks, 0);
         }
 
-        function processTracks(tracks, numTracksLoaded) {
+        function processTracks(tracks, offset) {
+          // TODO: collect popularity, count, genre, explicitness and duration
 
           var artistId = '',
+              nextTrackUrl = '',
               numTracks = tracks.total;
 
           // Check if 'tracks' is empty (i.e. user has no tracks in library)
@@ -139,24 +144,24 @@
           }
 
           // Update progress
-          numTracksLoaded += tracks.items.length;
-          console.log((numTracksLoaded / numTracks * 100) + '%');
+          offset += tracks.items.length;
+          console.log((offset / numTracks * 100) + '%');
 
           for (var i = 0; i < tracks.items.length; i++) {
             while (artist = tracks.items[i].track.artists.pop()) {
               artistId = artist.id;
               if (artistId in allUserArtistIds) {
-                allUserArtistIds[artistId].count++;
+                allUserArtistIds[artistId].track_count++;
               } else {
                 allUserArtistIds[artistId] = artist;
-                allUserArtistIds[artistId].count = 1;
+                allUserArtistIds[artistId].track_count = 1;
               }
             }
           }
 
           if (tracks.next) {
-            callSpotifyWebAPI(tracks.next, {}, function(tracks) {
-              processTracks(tracks, numTracksLoaded);
+            getUserTracks(offset, 50, function(tracks) {
+              processTracks(tracks, offset);
             });
           } else {
             getGenreData(allUserArtistIds);
@@ -171,12 +176,12 @@
          * the most tracks from their favorite artist, but it might be more
          * logical to do a percentage of the total tracks
          *
-         * Source: http://stackoverflow.com/questions/5199901/how-to-sort-an-associative-array-by-its-values-in-javascript
+         * Source: http://stackoverflow.com/a/5200010/854645
          */
         function getSortedArtistIds(artists) {
           return Object.keys(artists).sort(function(a, b) {
-            a = artists[a].count
-            b = artists[b].count
+            a = artists[a].track_count
+            b = artists[b].track_count
 
             return a < b ? -1 : (a > b ? 1 : 0);
           });
@@ -192,7 +197,7 @@
               promises = [];
 
           for (var i = 0; i < numArtists; i++) {
-            promises.push(getArtist(sortedArtistIds[i], function(artist) {
+            promises.push(getArtistById(sortedArtistIds[i], function(artist) {
               artistGenres = artist.genres; // Does this need to be saved?
               // TODO: if artist has no genres, check the echo nest
               while (genre = artistGenres.pop()) {
@@ -235,8 +240,12 @@
           }
         }
 
+        // TODO: add static variables http://stackoverflow.com/a/1535687/854645
+
         document.getElementById('vizify').addEventListener('click', function() {
           getUserTracks(
+            0,  // offset
+            50, // limit (max)
             function(tracks) {
               initProcessTracks(tracks);
             }

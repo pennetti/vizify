@@ -49,12 +49,12 @@ var getUserTracks = function(callback) {
  * @param  {callback} callback function
  * @return {ajax} ajax promise
  */
-var getArtist = function(id, callback) {
+var getArtistById = function(id, callback) {
   return callSpotifyWebAPI(
     'https://api.spotify.com/v1/artists/' + id, {}, callback);
 };
 
-exports.getArtist = getArtist;
+exports.getArtistById = getArtistById;
 exports.getUserTracks = getUserTracks;
 exports.getUserProfile = getUserProfile;
 exports.callSpotifyWebAPI = callSpotifyWebAPI;
