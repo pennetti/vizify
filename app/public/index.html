@@ -8,6 +8,9 @@
       #login, #loggedin {
         display: none;
       }
+      #vizify {
+        width: 80px;
+      }
       .text-overflow {
         overflow: hidden;
         text-overflow: ellipsis;
@@ -31,18 +34,13 @@
           <div class="navbar-header">
             <a class="navbar-brand" href="#"><span>&nbsp;Vizify&nbsp;</span></a>
           </div>
-          <div class="collapse navbar-collapse">
-            <ul id="options" class="nav navbar-nav navbar-right">
-              <li><a class="option" href="#" id='show-about'>About</a></li>
-            </ul>
-          </div>
         </div>
       </div>
       <div id="hero" class="hero-unit">
         <div class="container">
           <h1> Vizify </h1>
           <p class="lead">Visualize your Spotify collection.</p>
-          <button class="btn btn-info btn-large" id="vizify" type="button">  Go </button>
+          <button class="btn btn-info btn-large" id="vizify" type="button"><span>Go</span></button>
           <div id="info"> </div>
         </div>
       </div>
@@ -145,7 +143,10 @@
 
           // Update progress
           offset += tracks.items.length;
-          console.log((offset / numTracks * 100) + '%');
+          // TODO: wrap in function
+          document.getElementById('vizify').childNodes[0].innerText =
+            Math.round(offset / numTracks * 100);
+          // $('#vizify span').text(Math.round(offset / numTracks * 100));
 
           for (var i = 0; i < tracks.items.length; i++) {
             while (artist = tracks.items[i].track.artists.pop()) {
