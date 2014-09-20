@@ -34,13 +34,16 @@ var getUserProfile = function(callback) {
 };
 
 /**
- * Get the tracks in the user collection
+ * Get tracks in the user collection
+ * @param  {offset} index of first object to return
+ * @param  {limit} number of tracks to return, max 50
  * @param  {callback} callback function
  * @return {ajax} ajax promise
  */
-var getUserTracks = function(callback) {
+var getUserTracks = function(offset, limit, callback) {
   return callSpotifyWebAPI(
-    'https://api.spotify.com/v1/me/tracks', {}, callback);
+    'https://api.spotify.com/v1/me/tracks?limit=' + limit +
+    '&offset=' + offset, {}, callback);
 };
 
 /**
@@ -57,4 +60,4 @@ var getArtistById = function(id, callback) {
 exports.getArtistById = getArtistById;
 exports.getUserTracks = getUserTracks;
 exports.getUserProfile = getUserProfile;
-exports.callSpotifyWebAPI = callSpotifyWebAPI;
+// exports.callSpotifyWebAPI = callSpotifyWebAPI;

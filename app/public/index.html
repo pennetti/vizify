@@ -2,6 +2,7 @@
 <html>
   <head>
     <title>Vizify</title>
+    <!-- <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css"> -->
     <link type="text/css" href="styles.css" rel="stylesheet" />
     <link type="text/css" href="sp-bootstrap.css" rel="stylesheet" media="screen">
     <style type="text/css">
@@ -11,21 +12,14 @@
       #vizify {
         width: 80px;
       }
-      .text-overflow {
-        overflow: hidden;
-        text-overflow: ellipsis;
-        white-space: nowrap;
-        width: 500px;
-      }
     </style>
   </head>
-
   <body>
     <div class="container">
       <div id="login">
-        <!-- TODO: put in cool login page -->
-        <h1>Log in to get started.</h1>
-        <a href="/login" class="btn btn-primary">Log in with Spotify</a>
+        <!-- TODO: put in cool log in page -->
+        <h1> Log in to get started. </h1>
+        <a href="/login" class="btn btn-primary"> Log in with Spotify </a>
       </div>
     </div>
     <div id="loggedin">
@@ -39,9 +33,11 @@
       <div id="hero" class="hero-unit">
         <div class="container">
           <h1> Vizify </h1>
-          <p class="lead">Visualize your Spotify collection.</p>
-          <button class="btn btn-info btn-large" id="vizify" type="button"><span>Go</span></button>
-          <div id="info"> </div>
+          <p class="lead"> Visualize your Spotify collection. </p>
+          <button class="btn btn-info btn-large" id="vizify" type="button">
+             Go
+          </button>
+          <div id="info"></div>
         </div>
       </div>
     </div>
@@ -91,7 +87,7 @@
         var allUserArtistIds = {}
             allArtistGenres = {};
 
-        function callSpotifyWebAPI (url, data, callback) {
+        function callSpotifyWebApi (url, data, callback) {
           return $.ajax({
             url: url,
             dataType: 'json',
@@ -109,19 +105,19 @@
         }
 
         function getUserProfile(callback) {
-          return callSpotifyWebAPI(
+          return callSpotifyWebApi(
             'https://api.spotify.com/v1/me', {}, callback);
         }
 
         // test if default variables work
         function getUserTracks(offset, limit, callback) {
-          return callSpotifyWebAPI(
+          return callSpotifyWebApi(
             'https://api.spotify.com/v1/me/tracks?limit=' + limit +
             '&offset=' + offset, {}, callback);
         }
 
         function getArtistById(id, callback) {
-          return callSpotifyWebAPI(
+          return callSpotifyWebApi(
             'https://api.spotify.com/v1/artists/' + id, {}, callback);
         }
 
@@ -136,7 +132,6 @@
               nextTrackUrl = '',
               numTracks = tracks.total;
 
-          // Check if 'tracks' is empty (i.e. user has no tracks in library)
           if (tracks.offset == 0) {
             // No tracks!
           }
@@ -144,7 +139,7 @@
           // Update progress
           offset += tracks.items.length;
           // TODO: wrap in function
-          document.getElementById('vizify').childNodes[0].innerText =
+          document.getElementById('vizify').innerText =
             Math.round(offset / numTracks * 100);
           // $('#vizify span').text(Math.round(offset / numTracks * 100));
 
@@ -230,14 +225,12 @@
           if (access_token) {
             getUserProfile(
               function(response) {
-                $('#login').hide();
-                $('#loggedin').show();
-              }
-            );
+                document.getElementById('login').style.display = 'none';
+                document.getElementById('loggedin').style.display = 'inline';
+              });
           } else {
-            // render initial screen
-            $('#login').show();
-            $('#loggedin').hide();
+            document.getElementById('login').style.display = 'inline';
+            document.getElementById('loggedin').style.display = 'none';
           }
         }
 
@@ -257,4 +250,3 @@
     </script>
   </body>
 </html>
-

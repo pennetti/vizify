@@ -1,9 +1,11 @@
+var fs = require('fs');
 var express = require('express'); // Express web server framework
 var request = require('request'); // "Request" library
+var spotifyApi = require('./spotify.js');
 var querystring = require('querystring');
 var cookieParser = require('cookie-parser');
 
-var spotifyApi = require('./spotify.js');
+// var genresJson = require('./genres.json');  // JSON.parse(genresJson)
 
 var client_id = 'd7a061eff44a40f89b2cc19aec7e2bd4'; // Your client id
 var redirect_uri  = 'http://localhost:8888/callback'; // Your redirect uri
@@ -26,19 +28,31 @@ var generateRandomString = function(length) {
 };
 
 var stateKey = 'spotify_auth_state';
-
+var genresJson = __dirname + '/genres.json';
 var app = express();
+
+fs.readFile(genresJson, 'utf8', function (err, data) {
+  if (err) {
+    console.log('Error: ' + err);
+    return;
+  }
+
+  data = JSON.parse(data);
+
+  console.dir(data);
+});
 
 app.use(express.static(__dirname + '/public'));
 app.use(cookieParser());
 
 app.get('/login', function(req, res) {
 
-  var state = generateRandomString(16);
+  var state = generateRandomString(16),
+      scope = 'user-read-private ' + 'user-read-email ' +
+        'user-library-read ' + 'playlist-read-private';
+
   res.cookie(stateKey, state);
 
-  // your application requests authorization
-  var scope = 'user-read-private user-read-email user-library-read playlist-read-private';
   res.redirect('https://accounts.spotify.com/authorize?' +
     querystring.stringify({
       response_type: 'code',
@@ -46,7 +60,8 @@ app.get('/login', function(req, res) {
       scope: scope,
       redirect_uri: redirect_uri,
       state: state
-    }));
+    })
+  );
 });
 
 app.get('/callback', function(req, res) {
@@ -130,11 +145,11 @@ app.get('/callback', function(req, res) {
 
 app.get('/refresh_token', function(req, res) {
 
-  // requesting access token from refresh token
-  var refresh_token = req.query.refresh_token;
-  var authOptions = {
+  var refresh_token = req.query.refresh_token,
+      authOptions = {
     url: 'https://accounts.spotify.com/api/token',
-    headers: { 'Authorization': 'Basic ' + (new Buffer(client_id + ':' + client_secret).toString('base64')) },
+    headers: { 'Authorization': 'Basic ' + (new Buffer(client_id + ':' +
+      client_secret).toString('base64')) },
     form: {
       grant_type: 'refresh_token',
       refresh_token: refresh_token
