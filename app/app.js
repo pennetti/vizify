@@ -1,53 +1,28 @@
-var fs = require('fs');
-var express = require('express'); // Express web server framework
-var request = require('request'); // "Request" library
-var spotifyApi = require('./spotify.js');
-var querystring = require('querystring');
-var cookieParser = require('cookie-parser');
+var fs = require('fs'),
+    express = require('express'), // Express web server framework
+    request = require('request'), // "Request" library
+    querystring = require('querystring'),
+    cookieParser = require('cookie-parser'),
 
-// var genresJson = require('./genres.json');  // JSON.parse(genresJson)
+    utils = require('./utils.js'),
+    spotifyApi = require('./spotify.js'),
+    genresJson = require('./genres.json');  // JSON.parse(genresJson)
+    // Using 'require' on the json file so it is only loaded once
 
-var client_id = 'd7a061eff44a40f89b2cc19aec7e2bd4'; // Your client id
-var redirect_uri  = 'http://localhost:8888/callback'; // Your redirect uri
-var client_secret = 'd99700cc77b140449953e5d51ed7e2b2'; // Your client secret
+var client_id = 'd7a061eff44a40f89b2cc19aec7e2bd4', // Your client id
+    redirect_uri  = 'http://localhost:8888/callback', // Your redirect uri
+    client_secret = 'd99700cc77b140449953e5d51ed7e2b2'; // Your client secret
 
-/**
- * Generates a random string containing numbers and letters
- * @param  {number} length The length of the string
- * @return {string} The generated string
- */
-var generateRandomString = function(length) {
-  var text = '',
-      possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789';
-
-  for (var i = 0; i < length; i++) {
-    text += possible.charAt(Math.floor(Math.random() * possible.length));
-  }
-
-  return text;
-};
-
-var stateKey = 'spotify_auth_state';
-var genresJson = __dirname + '/genres.json';
 var app = express();
 
-fs.readFile(genresJson, 'utf8', function (err, data) {
-  if (err) {
-    console.log('Error: ' + err);
-    return;
-  }
-
-  data = JSON.parse(data);
-
-  console.dir(data);
-});
+var stateKey = 'spotify_auth_state';
 
 app.use(express.static(__dirname + '/public'));
 app.use(cookieParser());
 
 app.get('/login', function(req, res) {
 
-  var state = generateRandomString(16),
+  var state = utils.generateRandomString(16),
       scope = 'user-read-private ' + 'user-read-email ' +
         'user-library-read ' + 'playlist-read-private';
 
@@ -66,24 +41,19 @@ app.get('/login', function(req, res) {
 
 app.get('/callback', function(req, res) {
 
-  // your application requests refresh and access tokens
-  // after checking the state parameter
-
-  var code = req.query.code || null;
-  var state = req.query.state || null;
-  var storedState = req.cookies ? req.cookies[stateKey] : null;
-
-  // needed for the echo nest calls
-  // res.header("Access-Control-Allow-Origin", "*");
-  // res.header("Access-Control-Allow-Headers", "Accept, Origin, X-Requested-With, Content-Type");
+  var code = req.query.code || null,
+      state = req.query.state || null,
+      storedState = req.cookies ? req.cookies[stateKey] : null;
 
   if (state === null || state !== storedState) {
     res.redirect('/#' +
       querystring.stringify({
         error: 'state_mismatch'
-      }));
+      })
+    );
   } else {
     res.clearCookie(stateKey);
+
     var authOptions = {
       url: 'https://accounts.spotify.com/api/token',
       form: {
@@ -102,42 +72,20 @@ app.get('/callback', function(req, res) {
         var access_token = body.access_token,
             refresh_token = body.refresh_token;
 
-        var options = {
-          url: 'https://api.spotify.com/v1/me',
-          headers: { 'Authorization': 'Bearer ' + access_token },
-          json: true
-        };
+        // requests here
 
-        // use the access token to access the Spotify Web API
-        request.get(options, function(error, response, body) {
-          console.log(body);
-        });
-
-
-        // THE ECHO NEST
-        // var options = {
-        //   url: 'http://developer.echonest.com/api/v4/artist/profile?api_key=VO9NDXU6IZBMOMI2X&name=weezer',
-        //   crossDomain: true,
-        //   json: false
-        // };
-
-        // // use the access token to access the Spotify Web API
-        // request.get(options, function(error, response, body) {
-        //   console.log(response.headers['x-ratelimit-remaining']);
-        // });
-
-
-        // we can also pass the token to the browser to make requests from there
         res.redirect('/#' +
           querystring.stringify({
             access_token: access_token,
             refresh_token: refresh_token
-          }));
+          })
+        );
       } else {
         res.redirect('/#' +
           querystring.stringify({
             error: 'invalid_token'
-          }));
+          })
+        );
       }
     });
   }
@@ -145,8 +93,9 @@ app.get('/callback', function(req, res) {
 
 app.get('/refresh_token', function(req, res) {
 
-  var refresh_token = req.query.refresh_token,
-      authOptions = {
+  var refresh_token = req.query.refresh_token;
+
+  var authOptions = {
     url: 'https://accounts.spotify.com/api/token',
     headers: { 'Authorization': 'Basic ' + (new Buffer(client_id + ':' +
       client_secret).toString('base64')) },

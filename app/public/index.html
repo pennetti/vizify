@@ -42,7 +42,6 @@
       </div>
     </div>
 
-    <!-- <script src="//cdnjs.cloudflare.com/ajax/libs/handlebars.js/2.0.0-alpha.1/handlebars.min.js"></script> -->
     <script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
     <script>
       (function() {
@@ -50,19 +49,8 @@
         // TODO: make a dynamic animation (i.e. update the model each time new
         // data is entered)
 
-        /**
-         * Generates a random string containing numbers and letters
-         * @param  {number} length The length of the string
-         * @return {string} The generated string
-         */
-
         // http://stackoverflow.com/a/12206897/854645
         $.whenall = function(arr) { return $.when.apply($, arr); };
-
-        //  http://stackoverflow.com/a/1145525/854645
-        String.prototype.replaceAll = function (search, replacement) {
-          return this.split(search).join(replacement);
-        };
 
         /**
          * Obtains parameters from the hash of the URL
@@ -138,10 +126,8 @@
 
           // Update progress
           offset += tracks.items.length;
-          // TODO: wrap in function
           document.getElementById('vizify').innerText =
             Math.round(offset / numTracks * 100);
-          // $('#vizify span').text(Math.round(offset / numTracks * 100));
 
           for (var i = 0; i < tracks.items.length; i++) {
             while (artist = tracks.items[i].track.artists.pop()) {

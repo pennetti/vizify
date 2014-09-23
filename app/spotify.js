@@ -1,63 +1,62 @@
+var rp = require('request-promise'),
+    querystring = require('querystring');
+
 
 /**
  * Make an ajax call to the Spotify Web API
  * @param  {url} Spotify Web API URL
  * @param  {data} data to send in the api call
  * @param  {callback} callback function for api call
- * @return {ajax} ajax promise
+ * @return {rp} request promise
  */
-var callSpotifyWebAPI = function(url, data, callback) {
-  return $.ajax({
+var callSpotifyWebApi = function(url, data, access_token) {
+  var options = {
     url: url,
     dataType: 'json',
     data: data,
-    headers: {
-      'Authorization': 'Bearer ' + access_token
-    },
-    success: function(response) {
-      callback(response);
-    },
-    error: function(response) {
-      callback(null);
-    }
-  });
+    headers: { 'Authorization': 'Bearer ' + access_token },
+    json: true
+  };
+
+  return rp(options);
 };
 
 /**
  * Get the current user profile
- * @param  {callback} callback function
- * @return {ajax} ajax promise
+ * @param  {access_token} access token
+ * @return {rp} request promise
  */
-var getUserProfile = function(callback) {
-  return callSpotifyWebAPI(
-    'https://api.spotify.com/v1/me', {}, callback);
+var getUserProfile = function(access_token) {
+  return callSpotifyWebApi(
+    'https://api.spotify.com/v1/me', {}, access_token);
 };
 
 /**
  * Get tracks in the user collection
  * @param  {offset} index of first object to return
  * @param  {limit} number of tracks to return, max 50
- * @param  {callback} callback function
- * @return {ajax} ajax promise
+ * @return {rp} request promise
  */
-var getUserTracks = function(offset, limit, callback) {
-  return callSpotifyWebAPI(
-    'https://api.spotify.com/v1/me/tracks?limit=' + limit +
-    '&offset=' + offset, {}, callback);
+var getUserTracks = function(offset, limit, access_token) {
+  return callSpotifyWebApi(
+    'https://api.spotify.com/v1/me/tracks' +
+    querystring.stringify({
+      limit: limit,
+      offset: offset
+    }), {}, access_token);
 };
 
 /**
  * Get the artist object that corresponds to the ID
  * @param  {id} artist ID
- * @param  {callback} callback function
- * @return {ajax} ajax promise
+ * @param  {access_token} access token
+ * @return {rp} request promise
  */
-var getArtistById = function(id, callback) {
-  return callSpotifyWebAPI(
-    'https://api.spotify.com/v1/artists/' + id, {}, callback);
+var getArtistById = function(id, access_token) {
+  return callSpotifyWebApi(
+    'https://api.spotify.com/v1/artists/' + id, {}, access_token);
 };
 
 exports.getArtistById = getArtistById;
 exports.getUserTracks = getUserTracks;
 exports.getUserProfile = getUserProfile;
-// exports.callSpotifyWebAPI = callSpotifyWebAPI;
