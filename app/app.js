@@ -2,11 +2,10 @@ var fs = require('fs'),
     express = require('express'), // Express web server framework
     request = require('request'), // "Request" library
     querystring = require('querystring'),
-    cookieParser = require('cookie-parser'),
+    cookieParser = require('cookie-parser');
 
-    utils = require('./utils.js'),
-    spotifyApi = require('./spotify.js'),
-    genresJson = require('./genres.json');  // JSON.parse(genresJson)
+    // spotifyApi = require('./en.js'), not yet implemented
+    // genresJson = require('./genres.json');  // JSON.parse(genresJson)
     // Using 'require' on the json file so it is only loaded once
 
 var client_id = 'd7a061eff44a40f89b2cc19aec7e2bd4', // Your client id
@@ -17,12 +16,29 @@ var app = express();
 
 var stateKey = 'spotify_auth_state';
 
+/**
+ * Generates a random string containing numbers and letters
+ * @param  {number} length The length of the string
+ * @return {string} The generated string
+ */
+function generateRandomString(length) {
+  var text = '',
+      possible = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz' +
+        '0123456789';
+
+  for (var i = 0; i < length; i++) {
+    text += possible.charAt(Math.floor(Math.random() * possible.length));
+  }
+
+  return text;
+};
+
 app.use(express.static(__dirname + '/public'));
 app.use(cookieParser());
 
 app.get('/login', function(req, res) {
 
-  var state = utils.generateRandomString(16),
+  var state = generateRandomString(16),
       scope = 'user-read-private ' + 'user-read-email ' +
         'user-library-read ' + 'playlist-read-private';
 

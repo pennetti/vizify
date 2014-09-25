@@ -4,7 +4,7 @@
     <title>Vizify</title>
     <!-- <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css"> -->
     <link type="text/css" href="styles.css" rel="stylesheet" />
-    <link type="text/css" href="sp-bootstrap.css" rel="stylesheet" media="screen">
+    <link type="text/css" href="sp-bootstrap.min.css" rel="stylesheet" media="screen">
     <style type="text/css">
       #login, #loggedin {
         display: none;
@@ -43,9 +43,9 @@
     </div>
 
     <script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
+    <script src="/js/spotify.js"></script>
     <script>
       (function() {
-
         // TODO: make a dynamic animation (i.e. update the model each time new
         // data is entered)
 
@@ -74,6 +74,8 @@
 
         var allUserArtistIds = {}
             allArtistGenres = {};
+
+        var sp = new spotifyApi();
 
         function callSpotifyWebApi (url, data, callback) {
           return $.ajax({
