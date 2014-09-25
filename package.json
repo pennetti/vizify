@@ -8,7 +8,6 @@
     "cookie-parser": "*",
     "express": "*",
     "querystring": "*",
-    "request": "*",
-    "bluebird": "*"
+    "request": "*"
   }
 }
