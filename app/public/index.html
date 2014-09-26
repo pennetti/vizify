@@ -44,6 +44,7 @@
 
     <script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
     <script src="/js/spotify.js"></script>
+    <script src="/js/vizify_data.js"></script>
     <script>
       (function() {
         // TODO: make a dynamic animation (i.e. update the model each time new
@@ -57,12 +58,15 @@
          * @return Object
          */
         function getHashParams() {
-          var hashParams = {};
-          var e, r = /([^&;=]+)=?([^&;]*)/g,
-              q = window.location.hash.substring(1);
-          while ( e = r.exec(q)) {
-             hashParams[e[1]] = decodeURIComponent(e[2]);
+          var params,
+              hashParams = {},
+              regex = /([^&;=]+)=?([^&;]*)/g,
+              urlAnchor = window.location.hash.substring(1);
+
+          while (params = regex.exec(urlAnchor)) {
+             hashParams[params[1]] = decodeURIComponent(params[2]);
           }
+
           return hashParams;
         }
 
@@ -77,50 +81,12 @@
 
         var sp = new spotifyApi();
 
-        function callSpotifyWebApi (url, data, callback) {
-          return $.ajax({
-            url: url,
-            dataType: 'json',
-            data: data,
-            headers: {
-              'Authorization': 'Bearer ' + access_token
-            },
-            success: function(response) {
-              callback(response);
-            },
-            error: function(response) {
-              callback(null);
-            }
-          });
-        }
-
-        function getUserProfile(callback) {
-          return callSpotifyWebApi(
-            'https://api.spotify.com/v1/me', {}, callback);
-        }
-
-        // test if default variables work
-        function getUserTracks(offset, limit, callback) {
-          return callSpotifyWebApi(
-            'https://api.spotify.com/v1/me/tracks?limit=' + limit +
-            '&offset=' + offset, {}, callback);
-        }
-
-        function getArtistById(id, callback) {
-          return callSpotifyWebApi(
-            'https://api.spotify.com/v1/artists/' + id, {}, callback);
-        }
-
         function initProcessTracks(tracks) {
           processTracks(tracks, 0);
         }
 
         function processTracks(tracks, offset) {
           // TODO: collect popularity, count, genre, explicitness and duration
-
-          var artistId = '',
-              nextTrackUrl = '',
-              numTracks = tracks.total;
 
           if (tracks.offset == 0) {
             // No tracks!
@@ -129,22 +95,21 @@
           // Update progress
           offset += tracks.items.length;
           document.getElementById('vizify').innerText =
-            Math.round(offset / numTracks * 100);
+            Math.round(offset / tracks.total * 100);
 
           for (var i = 0; i < tracks.items.length; i++) {
             while (artist = tracks.items[i].track.artists.pop()) {
-              artistId = artist.id;
-              if (artistId in allUserArtistIds) {
-                allUserArtistIds[artistId].track_count++;
+              if (artist.id in allUserArtistIds) {
+                allUserArtistIds[artist.id].track_count++;
               } else {
-                allUserArtistIds[artistId] = artist;
-                allUserArtistIds[artistId].track_count = 1;
+                allUserArtistIds[artist.id] = artist;
+                allUserArtistIds[artist.id].track_count = 1;
               }
             }
           }
 
           if (tracks.next) {
-            getUserTracks(offset, 50, function(tracks) {
+            sp.getUserTracks(offset, 50, function(tracks) {
               processTracks(tracks, offset);
             });
           } else {
@@ -181,7 +146,7 @@
               promises = [];
 
           for (var i = 0; i < numArtists; i++) {
-            promises.push(getArtistById(sortedArtistIds[i], function(artist) {
+            promises.push(sp.getArtistById(sortedArtistIds[i], function(artist) {
               artistGenres = artist.genres; // Does this need to be saved?
               // TODO: if artist has no genres, check the echo nest
               while (genre = artistGenres.pop()) {
@@ -211,7 +176,7 @@
           alert('There was an error during the authentication');
         } else {
           if (access_token) {
-            getUserProfile(
+            sp.getUserProfile(
               function(response) {
                 document.getElementById('login').style.display = 'none';
                 document.getElementById('loggedin').style.display = 'inline';
@@ -225,7 +190,7 @@
         // TODO: add static variables http://stackoverflow.com/a/1535687/854645
 
         document.getElementById('vizify').addEventListener('click', function() {
-          getUserTracks(
+          sp.getUserTracks(
             0,  // offset
             50, // limit (max)
             function(tracks) {

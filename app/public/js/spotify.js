@@ -1,5 +1,6 @@
 var spotifyApi = (function () {
 
+  // TODO: get errors from params, check access_token before request
   var _access_token = '';
 
   /**
@@ -7,16 +8,21 @@ var spotifyApi = (function () {
    * @return Object
    */
   function getHashParams() {
-    var hashParams = {};
-    var e, r = /([^&;=]+)=?([^&;]*)/g,
-        q = window.location.hash.substring(1);
-    while ( e = r.exec(q)) {
-       hashParams[e[1]] = decodeURIComponent(e[2]);
+    var params,
+        hashParams = {},
+        regex = /([^&;=]+)=?([^&;]*)/g,
+        urlAnchor = window.location.hash.substring(1);
+
+    while (params = regex.exec(urlAnchor)) {
+       hashParams[params[1]] = decodeURIComponent(params[2]);
     }
+
     return hashParams;
   }
 
-  // constructor
+  /**
+   * Spotify Web API constructor
+   */
   var _spotifyApi = function() {
     _access_token = getHashParams().access_token;
   };
