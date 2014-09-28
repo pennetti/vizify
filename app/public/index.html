@@ -11,6 +11,7 @@
       }
       #vizify {
         width: 80px;
+        text-align: center;
       }
     </style>
   </head>
@@ -50,9 +51,6 @@
         // TODO: make a dynamic animation (i.e. update the model each time new
         // data is entered)
 
-        // http://stackoverflow.com/a/12206897/854645
-        $.whenall = function(arr) { return $.when.apply($, arr); };
-
         /**
          * Obtains parameters from the hash of the URL
          * @return Object
@@ -72,115 +70,15 @@
 
         var params = getHashParams();
 
-        var access_token = params.access_token
-            refresh_token = params.refresh_token,
+        var access_token = params.access_token,
             error = params.error;
-
-        var allUserArtistIds = {}
-            allArtistGenres = {};
-
-        var sp = new spotifyApi();
-
-        function initProcessTracks(tracks) {
-          processTracks(tracks, 0);
-        }
-
-        function processTracks(tracks, offset) {
-          // TODO: collect popularity, count, genre, explicitness and duration
-
-          if (tracks.offset == 0) {
-            // No tracks!
-          }
-
-          // Update progress
-          offset += tracks.items.length;
-          document.getElementById('vizify').innerText =
-            Math.round(offset / tracks.total * 100);
-
-          for (var i = 0; i < tracks.items.length; i++) {
-            while (artist = tracks.items[i].track.artists.pop()) {
-              if (artist.id in allUserArtistIds) {
-                allUserArtistIds[artist.id].track_count++;
-              } else {
-                allUserArtistIds[artist.id] = artist;
-                allUserArtistIds[artist.id].track_count = 1;
-              }
-            }
-          }
-
-          if (tracks.next) {
-            sp.getUserTracks(offset, 50, function(tracks) {
-              processTracks(tracks, offset);
-            });
-          } else {
-            getGenreData(allUserArtistIds);
-          }
-        }
-
-        /**
-         * Sorting...
-         *
-         * Will sort user artists by the number of tracks the user has for
-         * that artist in their library.  the logic is that the user will have
-         * the most tracks from their favorite artist, but it might be more
-         * logical to do a percentage of the total tracks
-         *
-         * Source: http://stackoverflow.com/a/5200010/854645
-         */
-        function getSortedArtistIds(artists) {
-          return Object.keys(artists).sort(function(a, b) {
-            a = artists[a].track_count
-            b = artists[b].track_count
-
-            return a < b ? -1 : (a > b ? 1 : 0);
-          });
-        }
-
-        function getGenreData(artists) {
-          // TODO: All tracks have been loaded, put in db and make viz
-          // TODO: this function is broken
-
-          var sortedArtistIds = getSortedArtistIds(artists),
-              numArtists = Object.keys(artists).length * 0.5,
-              artistGenres = [],
-              promises = [];
-
-          for (var i = 0; i < numArtists; i++) {
-            promises.push(sp.getArtistById(sortedArtistIds[i], function(artist) {
-              artistGenres = artist.genres; // Does this need to be saved?
-              // TODO: if artist has no genres, check the echo nest
-              while (genre = artistGenres.pop()) {
-                if (genre in allArtistGenres) {
-                  allArtistGenres[genre]++;
-                } else {
-                  allArtistGenres[genre] = 1;
-                }
-              }
-            }));
-          }
-
-          $.whenall(promises).done(function() {
-            // TODO: move the vizify method, refactor
-            console.log(allArtistGenres);
-            // vizify(allArtistGenres)
-            return allArtistGenres;
-          });
-        }
-
-        function vizify(data) {
-          // draw stuff with the data
-
-        }
 
         if (error) {
           alert('There was an error during the authentication');
         } else {
           if (access_token) {
-            sp.getUserProfile(
-              function(response) {
-                document.getElementById('login').style.display = 'none';
-                document.getElementById('loggedin').style.display = 'inline';
-              });
+            document.getElementById('login').style.display = 'none';
+            document.getElementById('loggedin').style.display = 'inline';
           } else {
             document.getElementById('login').style.display = 'inline';
             document.getElementById('loggedin').style.display = 'none';
@@ -190,13 +88,8 @@
         // TODO: add static variables http://stackoverflow.com/a/1535687/854645
 
         document.getElementById('vizify').addEventListener('click', function() {
-          sp.getUserTracks(
-            0,  // offset
-            50, // limit (max)
-            function(tracks) {
-              initProcessTracks(tracks);
-            }
-          );
+          var _vizifyData = new vizifyData();
+          // _vizifyData.getArtistGenreData();
         });
 
       })();

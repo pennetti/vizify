@@ -9,7 +9,7 @@ var fs = require('fs'),
     // Using 'require' on the json file so it is only loaded once
 
 var client_id = 'd7a061eff44a40f89b2cc19aec7e2bd4', // Your client id
-    redirect_uri  = 'http://localhost:8888/callback', // Your redirect uri
+    redirect_uri = 'http://localhost:8888/callback', // Your redirect uri
     client_secret = 'd99700cc77b140449953e5d51ed7e2b2'; // Your client secret
 
 var app = express();
@@ -31,7 +31,7 @@ function generateRandomString(length) {
   }
 
   return text;
-};
+}
 
 app.use(express.static(__dirname + '/public'));
 app.use(cookieParser());
