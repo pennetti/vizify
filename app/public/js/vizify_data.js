@@ -1,19 +1,23 @@
 var vizifyData = (function($) {
 
-  var _sp = new spotifyApi();
+  var _sp = new spotifyApi(),
 
-  var _tracks = {},
+      _data = {},
+      _tracks = {},
       _genres = {},
-      _genreFamilies = {};
-      _artists = { _length: 0 };
+      _genreFamilies = {},
+      _artists = { _length: 0 },
+      _sortedTracks = {};
 
   /**
    * Constructor
    */
   var _vizifyData = function() {
     getGenreFamilies();
-    getTracks().then(function() {
-      getArtistGenreData();
+    getUserLibrary().then(function() {
+      getUserStarredPlaylist().then(function() {
+        sortTracks();
+      });
     });
   };
 
@@ -70,17 +74,17 @@ var vizifyData = (function($) {
     $.whenall(promises).done(function() {
       // done
     });
-  };
+  }
 
   /**
    *
    */
-  function getTracks() {
+  function getUserLibrary() {
     var deferred = $.Deferred();
 
     // TODO: add notify() and progress() to deferred
     _sp.getUserTracks(0, 50, function(tracks) {
-      processUserTracks(tracks, 0, deferred);
+      processUserLibrary(tracks, 0, deferred);
     });
 
     return deferred.promise();
@@ -89,38 +93,70 @@ var vizifyData = (function($) {
   /**
    *
    */
-  function processUserTracks(tracks, offset, deferred) {
-    // Update progress
+  function processUserLibrary(tracks, offset, deferred) {
     // TODO: add deferred.notify() here
+
     offset += tracks.items.length;
     document.getElementById('vizify').innerText =
       Math.round(offset / tracks.total * 100) + '%';
 
     for (var i = 0; i < tracks.items.length; i++) {
-
       _tracks[tracks.items[i].track.id] = tracks.items[i].track;
       _tracks[tracks.items[i].track.id].added_at = tracks.items[i].added_at;
-
-      while (artist = tracks.items[i].track.artists.pop()) {
-
-        if (artist.id in _artists) {
-          _artists[artist.id].track_count++;
-        } else {
-          _artists._length++;
-          _artists[artist.id] = artist;
-          _artists[artist.id].track_count = 1;
-        }
-      }
     }
 
     if (tracks.next) {
       _sp.getUserTracks(offset, 50, function(tracks) {
-        processUserTracks(tracks, offset, deferred);
+        processUserLibrary(tracks, offset, deferred);
       });
     } else {
       deferred.resolve();
-      // return data;
-      // push everything to db?
+      return;
+    }
+  }
+
+  /**
+   *
+   */
+  function getUserStarredPlaylist() {
+
+    var deferred = $.Deferred();
+
+    _sp.getUserProfile(function(user) {
+      _sp.getUserStarredTracks(0, 100, user.id, function(tracks) {
+        processUserStarredPlaylist(tracks, 0, deferred);
+      });
+    });
+
+    return deferred;
+  }
+
+  /**
+   *
+   */
+  function processUserStarredPlaylist(tracks, offset, userId, deferred) {
+    // TODO: add timestamp comparison to take earliest added date
+    // TODO: add deferred.notify() here
+
+    offset += tracks.items.length;
+    document.getElementById('vizify').innerText =
+      Math.round(offset / tracks.total * 100) + '%';
+
+    for (var i = 0; i < tracks.items.length; i++) {
+      if (tracks.items[i].track.id in _tracks) {
+        _tracks[tracks.items[i].track.id].added_at = tracks.items[i].added_at;
+      } else {
+        _tracks[tracks.items[i].track.id] = tracks.items[i].track;
+        _tracks[tracks.items[i].track.id].added_at = tracks.items[i].added_at;
+      }
+    }
+
+    if (tracks.next) {
+      _sp.getUserStarredTracks(offset, 100, function(tracks) {
+        processUserStarredPlaylist(tracks, offset, userId, deferred);
+      });
+    } else {
+      deferred.resolve();
       return;
     }
   }
@@ -133,6 +169,25 @@ var vizifyData = (function($) {
     var maxNumArtists = 500;
 
     return _artists._length < maxNumArtists ? _artists._length : maxNumArtists;
+  }
+
+  function sortTracks() {
+    buckets = {};
+
+    for (var track in _tracks) {
+      if (track) {
+        var bucket = _tracks[track].added_at.substring(0, 7);
+        if (bucket in buckets) {
+          buckets[_tracks[track].added_at.substring(0, 7)]++;
+        } else {
+          buckets[_tracks[track].added_at.substring(0, 7)] = 1;
+        }
+      } else {
+        console.log('******' + track);
+      }
+    }
+
+    console.log(buckets);
   }
 
   /**

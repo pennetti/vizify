@@ -1,7 +1,7 @@
-var spotifyApi = (function() {
+var spotifyApi = (function($) {
 
   // TODO: get errors from params, check access_token before request
-  var _access_token = 'ACCESS_TOKEN';
+  var _access_token = null;
 
   /**
    * Obtains parameters from the hash of the URL
@@ -36,7 +36,7 @@ var spotifyApi = (function() {
    */
   function callSpotifyWebApi(url, data, callback) {
     return $.ajax({
-      url: url,
+      url: 'https://api.spotify.com/v1/' + url,
       dataType: 'json',
       data: data,
       headers: {
@@ -55,9 +55,8 @@ var spotifyApi = (function() {
    * Get the current user profile
    * @return {promise} ajax promise
    */
-  _spotifyApi.prototype.getUserProfile = function(callback) {
-    return callSpotifyWebApi(
-      'https://api.spotify.com/v1/me', {}, callback);
+  function getUserProfile(callback) {
+    return callSpotifyWebApi('me', {}, callback);
   };
 
   /**
@@ -68,8 +67,21 @@ var spotifyApi = (function() {
    */
   _spotifyApi.prototype.getUserTracks = function(offset, limit, callback) {
     return callSpotifyWebApi(
-      'https://api.spotify.com/v1/me/tracks?limit=' + limit + '&offset=' +
-      offset, {}, callback);
+      'me/tracks?/' + $.param({ limit:limit, offset: offset }), {}, callback);
+  };
+
+  /**
+   * Get starred playlist for current user (if public)
+   * @param  {offset} index of first object to return
+   * @param  {limit} number of tracks to return, max 100
+   * @param  {id} user id to use when looking up starred playlist
+   * @return {promise} ajax promise
+   */
+  _spotifyApi.prototype.getUserStarredTracks = function(offset, limit, id, callback) {
+    // TODO: check if starred playlist is public
+    return callSpotifyWebApi(
+      'users/' + id + '/starred/tracks?' +
+      $.param({ limit:limit, offset: offset }), {}, callback);
   };
 
   /**
@@ -78,10 +90,9 @@ var spotifyApi = (function() {
    * @return {promise} ajax promise
    */
   _spotifyApi.prototype.getArtistById = function(id, callback) {
-    return callSpotifyWebApi(
-      'https://api.spotify.com/v1/artists/' + id, {}, callback);
+    return callSpotifyWebApi('artists/' + id, {}, callback);
   };
 
   return _spotifyApi;
-}());
+}(jQuery));
 
