@@ -1,85 +1,51 @@
 var vizifyData = (function($) {
 
+  $.whenall = function(arr) { return $.when.apply($, arr); };
+
   var _sp = new spotifyApi(),
 
-      _data = {},
-      _tracks = {},
-      _genres = {},
-      _genreFamilies = {},
-      _artists = { _length: 0 },
-      _sortedTracks = {};
+      _data = { months:{}, total: 0 },
+      _tracks = { total: 0 }, // (trackId, {track})
+      _genres = { total: 0 }, // (subgenre, {family, artists})
+      _months = { total: 0 }, // (month, [trackId])
+      _genreFamilies = { total: 0 },
+      _artists = { total: 0 };
 
   /**
    * Constructor
    */
   var _vizifyData = function() {
-    getGenreFamilies();
-    getUserLibrary().then(function() {
-      getUserStarredPlaylist().then(function() {
-        sortTracks();
+    getTracks().then(function() {
+      getData().then(function() {
+        console.log('_tracks', _tracks);
+        console.log('_months', _months);
+        console.log('_artists', _artists);
+        console.log('_genres', _genres);
       });
     });
   };
 
-  $.whenall = function(arr) { return $.when.apply($, arr); };
-
   /**
    *
    */
-  // _vizifyData.prototype.getArtistGenreData = function() {
-  function getArtistGenreData() {
+  function getTracks() {
 
-    var sortedArtistIds = getSortedArtistIds(),
-        numArtists = getNumArtists(),
-        promises = [];
+    var deferred = $.Deferred();
 
-    for (var i = 0; i < numArtists; i++) {
-      // Ignore field if it starts with an underscore
-      if (sortedArtistIds[i].lastIndexOf('_', 0) === 0) { continue; }
-
-      promises.push(
-        _sp.getArtistById(sortedArtistIds[i], function() {})
-        .then(function(artist) {
-          // TODO: if artist has no genres, check the echo nest
-          // TODO: get genre data from the echo nest
-          if (artist === undefined) {
-            return;
-          }
-
-          if (artist.genres === undefined) {
-            return;
-          }
-
-          while (genre = artist.genres.pop()) {
-
-            // TODO: change model to:
-            //
-            if (genre in _genres) {
-              _genres[genre].artist_count++;
-              _genres[genre].track_count += _artists[artist.id].track_count;
-              _genres[genre].artists.push(artist.name);
-              // add artist ids, genre family, track count
-            } else {
-              _genres[genre] = {};
-              _genres[genre].artist_count = 1;
-              _genres[genre].track_count = _artists[artist.id].track_count;
-              _genres[genre].artists = [artist.name]; // might change to ids
-              _genres[genre].family = getGenreFamilyList(genre);
-            }
-          }
-        })
-      );
-    }
-
-    $.whenall(promises).done(function() {
-      // done
+    getUserLibrary().then(function() {
+      getUserStarredPlaylist().then(function() {
+        deferred.resolve();
+      });
     });
+
+    return deferred;
   }
 
   /**
    *
    */
   function getUserLibrary() {
+
     var deferred = $.Deferred();
 
     // TODO: add notify() and progress() to deferred
@@ -101,6 +67,7 @@ var vizifyData = (function($) {
       Math.round(offset / tracks.total * 100) + '%';
 
     for (var i = 0; i < tracks.items.length; i++) {
+      _tracks.total++;
       _tracks[tracks.items[i].track.id] = tracks.items[i].track;
       _tracks[tracks.items[i].track.id].added_at = tracks.items[i].added_at;
     }
@@ -124,7 +91,7 @@ var vizifyData = (function($) {
 
     _sp.getUserProfile(function(user) {
       _sp.getUserStarredTracks(0, 100, user.id, function(tracks) {
-        processUserStarredPlaylist(tracks, 0, deferred);
+        processUserStarredPlaylist(tracks, 0, user.id, deferred);
       });
     });
 
@@ -146,13 +113,14 @@ var vizifyData = (function($) {
       if (tracks.items[i].track.id in _tracks) {
         _tracks[tracks.items[i].track.id].added_at = tracks.items[i].added_at;
       } else {
+        _tracks.total++;
         _tracks[tracks.items[i].track.id] = tracks.items[i].track;
         _tracks[tracks.items[i].track.id].added_at = tracks.items[i].added_at;
       }
     }
 
     if (tracks.next) {
-      _sp.getUserStarredTracks(offset, 100, function(tracks) {
+      _sp.getUserStarredTracks(offset, 100, userId, function(tracks) {
         processUserStarredPlaylist(tracks, offset, userId, deferred);
       });
     } else {
@@ -164,30 +132,109 @@ var vizifyData = (function($) {
   /**
    *
    */
-  function getNumArtists() {
-    // Just for testing so the whole collection isn't pulled
-    var maxNumArtists = 500;
+  function getData() {
 
-    return _artists._length < maxNumArtists ? _artists._length : maxNumArtists;
+    var deferred = $.Deferred();
+
+    getGenreFamilies();
+    getMonths();
+    getArtists().then(function() {
+      getGenres();
+      deferred.resolve();
+    });
+
+    return deferred;
   }
 
-  function sortTracks() {
-    buckets = {};
+  /**
+   *
+   */
+  function getMonths() {
 
-    for (var track in _tracks) {
-      if (track) {
-        var bucket = _tracks[track].added_at.substring(0, 7);
-        if (bucket in buckets) {
-          buckets[_tracks[track].added_at.substring(0, 7)]++;
-        } else {
-          buckets[_tracks[track].added_at.substring(0, 7)] = 1;
-        }
+    var month = null;
+
+    for (var trackId in _tracks) {
+
+      if (trackId === 'total') { continue; }
+
+      month = _tracks[trackId].added_at.substring(0, 7);
+
+      if (month in _months) {
+        _months[month].push(trackId);
       } else {
-        console.log('******' + track);
+        _months[month] = [trackId];
+        _months.total++;
+      }
+    }
+  }
+
+  /**
+   *
+   */
+  function getArtists() {
+
+    var track = null,
+        promises = [];
+
+    for (var trackId in _tracks) {
+
+      if (trackId === 'total') { continue; }
+
+      track = _tracks[trackId];
+
+      for (var i = 0; i < track.artists.length; i++) {
+
+        // if (track.artists[i].id in _artists) {
+        //   _artists[track.artists[i].id].total++;
+        // } else {
+          promises.push(
+            _sp.getArtistById(track.artists[i].id, function() {})
+              .then(function(artist) {
+                if (artist.id in _artists) {
+                  _artists[artist.id].total++;
+                } else {
+                  _artists[artist.id] = artist;
+                  _artists[artist.id].total = 1;
+                  _artists.total++;
+                }
+              }));
+        // }
       }
     }
 
-    console.log(buckets);
+    return $.whenall(promises);
+  }
+
+  /**
+   *
+   */
+  function getGenres() {
+
+    var genre = null,
+        artist = null;
+
+    for (var artistId in _artists) {
+
+      if (artistId === 'total') { continue; }
+
+      artist = _artists[artistId];
+
+      for (var i = 0; i < artist.genres.length; i++) {
+
+        genre = artist.genres[i];
+
+        if (genre in _genres) {
+          _genres[genre].total += artist.total;
+          _genres[genre].artists.push(artist.id);
+          // add artist ids, genre family, track count
+        } else {
+          _genres[genre] = {};
+          _genres[genre].total = artist.total;
+          _genres[genre].artists = [artist.id];
+          _genres[genre].family = getGenreFamilyList(genre);
+        }
+      }
+    }
   }
 
   /**
@@ -210,6 +257,9 @@ var vizifyData = (function($) {
     });
   }
 
+  /**
+   *
+   */
   function getGenreFamilies() {
     $.getJSON('/js/genre_families.json', function(genreFamilies) {
       for (var i = 0; i < genreFamilies.length; i++) {
@@ -224,7 +274,7 @@ var vizifyData = (function($) {
     if (_genreFamilies[genre]) {
       return _genreFamilies[genre].family;
     }
-    // Add 'other' family to genre families to include those that are
+    // TODO: Add 'other' family to genre families to include those that are
     // unclassified
     return;
   }

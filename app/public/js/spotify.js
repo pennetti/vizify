@@ -34,9 +34,9 @@ var spotifyApi = (function($) {
    * @param  {callback} callback function for api call
    * @return {promise} ajax promise
    */
-  function callSpotifyWebApi(url, data, callback) {
+  function callSpotifyWebApi(uri, data, callback) {
     return $.ajax({
-      url: 'https://api.spotify.com/v1/' + url,
+      url: 'https://api.spotify.com/v1/' + uri,
       dataType: 'json',
       data: data,
       headers: {
@@ -55,7 +55,7 @@ var spotifyApi = (function($) {
    * Get the current user profile
    * @return {promise} ajax promise
    */
-  function getUserProfile(callback) {
+  _spotifyApi.prototype.getUserProfile = function(callback) {
     return callSpotifyWebApi('me', {}, callback);
   };
 
@@ -67,7 +67,7 @@ var spotifyApi = (function($) {
    */
   _spotifyApi.prototype.getUserTracks = function(offset, limit, callback) {
     return callSpotifyWebApi(
-      'me/tracks?/' + $.param({ limit:limit, offset: offset }), {}, callback);
+      'me/tracks?' + $.param({ limit:limit, offset: offset }), {}, callback);
   };
 
   /**
@@ -81,7 +81,7 @@ var spotifyApi = (function($) {
     // TODO: check if starred playlist is public
     return callSpotifyWebApi(
       'users/' + id + '/starred/tracks?' +
-      $.param({ limit:limit, offset: offset }), {}, callback);
+      $.param({ limit: limit, offset: offset }), {}, callback);
   };
 
   /**
@@ -95,4 +95,3 @@ var spotifyApi = (function($) {
 
   return _spotifyApi;
 }(jQuery));
-
