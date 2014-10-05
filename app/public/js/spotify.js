@@ -67,7 +67,7 @@ var spotifyApi = (function($) {
    */
   _spotifyApi.prototype.getUserTracks = function(offset, limit, callback) {
     return callSpotifyWebApi(
-      'me/tracks?' + $.param({ limit:limit, offset: offset }), {}, callback);
+      'me/tracks?' + $.param({ limit: limit, offset: offset }), {}, callback);
   };
 
   /**
