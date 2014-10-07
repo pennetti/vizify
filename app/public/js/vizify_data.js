@@ -59,18 +59,26 @@ var vizifyData = (function($) {
    * Constructor
    */
   var _vizifyData = function() {
-    getTracks().then(function(tracks) {
-      getData().then(function() {
-        console.log('_tracks', localStorage.getObject('_tracks'));
-        console.log('_months', _months);
-        console.log('_artists', _artists);
-        console.log('_genres', _genres);
-        getDataObject();
-        console.log('_data', _data);
-      });
-    });
+
+
   };
 
+  /**
+   *
+   */
+  _vizifyData.prototype.getDataObject = function() {
+
+    var deferred = $.Deferred();
+
+    getTracks().then(function(tracks) {
+      getData().then(function() {
+        buildDataObject();
+        deferred.resolve(_data);
+      });
+    });
+
+    return deferred.promise();
+  };
 
   /**
    *
@@ -275,6 +283,7 @@ var vizifyData = (function($) {
      *}
      */
     var promises = [],
+        artists = {},
         artistId = null;
 
     for (var trackId in _tracks) {
@@ -325,7 +334,8 @@ var vizifyData = (function($) {
      *  "total": 100
      *}
      */
-    var genre = null;
+    var genre = null,
+        genres = {};
 
     for (var artistId in _artists) {
       if (artistId === 'total') { continue; }
@@ -345,10 +355,12 @@ var vizifyData = (function($) {
         }
       }
     }
+
+    return genres;
   }
 
 
-  function getDataObject() {
+  function buildDataObject() {
     /**
      *{
      *  "months": {
@@ -380,24 +392,26 @@ var vizifyData = (function($) {
      *  "total": 10000 // total tracks in collection
      *}
      */
-    var subgenre = null,
-        genreFamily = null,
+    var genre = null,
+        genres = null,
+        subgenre = null,
+        subgenres = null,
         trackIds = null;
-    // TODO: totals are all wrong
+
     _data.total = _tracks.total;
     _data.months = {};
 
-    console.log('*');
-
     for (var month in _months) {
+      if (month === 'total') { continue; }
+
       trackIds = _months[month];
       _data.months[month] = {};
       _data.months[month].total = trackIds.length;
       _data.months[month].genres = {};
+
       for (var i = 0; i < trackIds.length; i++) {
         for (var j = 0; j < _tracks[trackIds[i]].artists.length; j++) {
           if (_artists[_tracks[trackIds[i]].artists[j]] === undefined) {
-            console.log(trackIds[i]);
             continue;
           }
 
@@ -405,40 +419,39 @@ var vizifyData = (function($) {
             .length; k++) {
             for (var m = 0; m < _genres[_artists[_tracks[trackIds[i]]
               .artists[j]].genres[k]].family.length; m++) {
+
                 genre = _genres[_artists[_tracks[trackIds[i]].artists[j]]
                   .genres[k]].family[m];
                 subgenre = _artists[_tracks[trackIds[i]].artists[j]].genres[k];
 
                 if (genre in _data.months[month].genres) {
-                  _data.months[month].genres[genre].total +=
-                    _genres[_artists[_tracks[trackIds[i]].artists[j]]
-                    .genres[k]].total;
+                  genres = _data.months[month].genres;
+                  subgenres = genres[genre].subgenres;
 
-                  if (subgenre in _data.months[month].genres[genre].subgenres) {
-                    _data.months[month].genres[genre].subgenres[subgenre]
-                      .total += _genres[_artists[_tracks[trackIds[i]]
-                      .artists[j]].genres[k]].total;
-                    _data.months[month].genres[genre].subgenres[subgenre]
-                      .artists.push(_tracks[trackIds[i]].artists[j]);
+                  genres[genre].total++;
+
+                  if (subgenre in subgenres) {
+                    subgenres[subgenre].total++;
+
+                    if (subgenres[subgenre].artists.indexOf(
+                        _tracks[trackIds[i]].artists[j]) === -1) {
+                        subgenres[subgenre].artists.push(
+                          _tracks[trackIds[i]].artists[j]);
+                      }
                   } else {
-                    _data.months[month].genres[genre].subgenres[subgenre] = {};
-                    _data.months[month].genres[genre].subgenres[subgenre]
-                      .total = _genres[_artists[_tracks[trackIds[i]].artists[j]]
-                      .genres[k]].total;
-                    _data.months[month].genres[genre].subgenres[subgenre]
-                      .artists = [_tracks[trackIds[i]].artists[j]];
+                    subgenres[subgenre] = {};
+                    subgenres[subgenre].total = 1
+                    subgenres[subgenre].artists =
+                      [_tracks[trackIds[i]].artists[j]];
                   }
                 } else {
                   _data.months[month].genres[genre] = {};
-                  _data.months[month].genres[genre].total =
-                    _genres[_artists[_tracks[trackIds[i]].artists[j]]
-                    .genres[k]].total;
-                  _data.months[month].genres[genre].subgenres = {};
+                  _data.months[month].genres[genre].total = 1;
 
+                  _data.months[month].genres[genre].subgenres = {};
                   _data.months[month].genres[genre].subgenres[subgenre] = {};
-                  _data.months[month].genres[genre].subgenres[subgenre].total =
-                    _genres[_artists[_tracks[trackIds[i]].artists[j]].genres[k]]
-                    .total;
+                  _data.months[month].genres[genre].subgenres[subgenre]
+                    .total = 1;
                   _data.months[month].genres[genre].subgenres[subgenre]
                     .artists = [_tracks[trackIds[i]].artists[j]];
                 }
@@ -449,46 +462,36 @@ var vizifyData = (function($) {
     }
   }
 
-
-  /**
-   * Sorting...
-   *
-   * Will sort user _artists by the number of tracks the user has for
-   * that artist in their library.  the logic is that the user will have
-   * the most tracks from their favorite artist, but it might be more
-   * logical to do a percentage of the total tracks
-   *
-   * Source: http://stackoverflow.com/a/5200010/854645
-   */
-  function getSortedArtistIds() {
-    return Object.keys(_artists).sort(function(a, b) {
-
-      a = _artists[a].track_count;
-      b = _artists[b].track_count;
-
-      return a < b ? -1 : (a > b ? 1 : 0);
-    });
-  }
-
   /**
    *
    */
   function getGenreFamilies() {
-    $.getJSON('/js/genre_families.json', function(genreFamilies) {
-      for (var i = 0; i < genreFamilies.length; i++) {
-        _genreFamilies[genreFamilies[i].name] = {};
-        _genreFamilies[genreFamilies[i].name].family = genreFamilies[i].family;
-        // _genreFamilies[genreFamilies[i].name].pop = genreFamilies[i].pop;
+    /**
+     *
+     *{
+     *  "indie pop": {
+     *    "family":
+     *  },
+     *  "indietronica": {},
+     *  "indie rock": {},
+     *}
+     */
+    $.getJSON('/js/genre_families.json', function(genres) {
+      for (var i = 0; i < genres.length; i++) {
+        _genreFamilies[genres[i].name] = {};
+        _genreFamilies[genres[i].name].family = genres[i].family;
+        // _genreFamilies[genres[i].name].pop = genres[i].pop;
       }
     });
   }
 
+  /**
+   *
+   */
   function getGenreFamilyList(genre) {
     if (_genreFamilies[genre]) {
       return _genreFamilies[genre].family;
     }
-    // TODO: Add 'other' family to genre families to include those that are
-    // unclassified
     return ['other'];
   }
 
