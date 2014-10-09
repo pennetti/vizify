@@ -2,10 +2,10 @@
 <html>
   <head>
     <title>Vizify</title>
-    <!-- <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css"> -->
-    <link type="text/css" href="styles.css" rel="stylesheet" />
-    <link type="text/css" href="sp-bootstrap.min.css" rel="stylesheet" media="screen">
-    <style type="text/css">
+    <!-- <link rel='stylesheet' href='https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css'> -->
+    <link type='text/css' href='styles.css' rel='stylesheet' />
+    <link type='text/css' href='sp-bootstrap.min.css' rel='stylesheet' media='screen'>
+    <style type='text/css'>
       #login, #loggedin {
         display: none;
       }
@@ -16,37 +16,41 @@
     </style>
   </head>
   <body>
-    <div class="container">
-      <div id="login">
+    <div class='container'>
+      <div id='login'>
         <!-- TODO: put in cool log in page -->
         <h1> Log in to get started. </h1>
-        <a href="/login" class="btn btn-primary"> Log in with Spotify </a>
+        <a href='/login' class='btn btn-primary'> Log in with Spotify </a>
       </div>
     </div>
-    <div id="loggedin">
-      <div class="navbar navbar-default navbar-fixed-top" role="navigation">
-        <div class="container">
-          <div class="navbar-header">
-            <a class="navbar-brand" href="#"><span>&nbsp;Vizify&nbsp;</span></a>
+    <div id='loggedin'>
+      <div class='navbar navbar-default navbar-fixed-top' role='navigation'>
+        <div class='container'>
+          <div class='navbar-header'>
+            <a class='navbar-brand' href='#'><span>&nbsp;Vizify&nbsp;</span></a>
           </div>
         </div>
       </div>
-      <div id="hero" class="hero-unit">
-        <div class="container">
+      <div id='hero' class='hero-unit'>
+        <div class='container'>
           <h1> Vizify </h1>
-          <p class="lead"> Visualize your Spotify collection. </p>
-          <button class="btn btn-info btn-large" id="vizify" type="button">
+          <p class='lead'> Visualize your Spotify collection. </p>
+          <button class='btn btn-info btn-large' id='vizify' type='button'>
              Go
           </button>
-          <div id="info"></div>
+          <div id='info'></div>
         </div>
       </div>
     </div>
 
-    <script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
-    <script src="/js/spotify.js"></script>
-    <script src="/js/vizify_data.js"></script>
-    <script src="/js/vizify.js"></script>
+    <div class='container'>
+      <canvas id='vizifyCanvas' width='2400' height='1200'></canvas>
+    </div>
+
+    <script src='http://code.jquery.com/jquery-1.10.1.min.js'></script>
+    <script src='/js/spotify.js'></script>
+    <script src='/js/vizify_data.js'></script>
+    <script src='/js/vizify.js'></script>
     <script>
       (function() {
         // TODO: make a dynamic animation (i.e. update the model each time new
@@ -89,8 +93,8 @@
         // TODO: add static variables http://stackoverflow.com/a/1535687/854645
 
         document.getElementById('vizify').addEventListener('click', function() {
-          var _vizifyData = new vizifyData();
-          // _vizifyData.getArtistGenreData();
+          var _vizify = new vizify();
+          _vizify.getVisualization();
         });
 
       })();
