@@ -1,8 +1,17 @@
 var vizify = (function($) {
 
-  var _vd = new vizifyData()
+  //@ http://jsfromhell.com/array/shuffle [v1.0]
+  function shuffle(o) { //v1.0
+    for (var j, x, i = o.length; i; j = Math.floor(Math.random() * i),
+      x = o[--i], o[i] = o[j], o[j] = x);
+    return o;
+  };
+
+  var _vd = new vizifyData(),
       _canvas = document.getElementById('vizifyCanvas'),
-      _context = _canvas.getContext('2d');
+      _context = _canvas.getContext('2d'),
+      // TODO: need more colors, determine number of genres
+      // TODO: make color less boring
       _colors = [
         '#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF',
         '#000000', '#800000', '#008000', '#000080', '#808000', '#800080',
@@ -15,9 +24,12 @@ var vizify = (function($) {
         '#A0A0A0', '#E00000', '#00E000', '#0000E0', '#E0E000', '#E000E0',
         '#00E0E0', '#E0E0E0'];
 
+  // _colors = shuffle(_colors);
+
   var _vizify = function() {
 
   };
+
 
   _vizify.prototype.getVisualization = function() {
 
@@ -43,6 +55,11 @@ var vizify = (function($) {
         subgenreTotal = null,
         subgenreArtists = null,
 
+        month = null,
+        sortedMonths = null,
+        genre = null,
+        sortedGenres = null,
+
         originX = 0,
         originY = 0,
         currentMonthX = null,
@@ -54,14 +71,37 @@ var vizify = (function($) {
         cursorY = 0,
 
         colorIndex = 0,
-        genreColors = {};
+        genreMetaData = {}; // color, cursor, total
 
     dataTotal = data.total;
     dataMonths = data.months;
+    sortedMonths = Object.keys(dataMonths).sort();
 
-    for (var month in dataMonths) {
+    for (var i = 0; i < sortedMonths.length; i++) {
+      month = sortedMonths[i];
+      for (var genre in dataMonths[month].genres) {
+        if (genre in genreMetaData) {
+          genreMetaData[genre].total += dataMonths[month].genres[genre].total;
+        } else {
+          genreMetaData[genre] = {};
+          genreMetaData[genre].total = dataMonths[month].genres[genre].total;
+          genreMetaData[genre].color = _colors[colorIndex];
+          genreMetaData[genre].cursorX = 0;
+          genreMetaData[genre].cursorY = 0;
+          colorIndex++;
+        }
+      }
+    }
+
+    sortedGenres = Object.keys(genreMetaData).sort(function(a, b) {
+      return -(genreMetaData[a].total - genreMetaData[b].total);
+    });
+    console.log(sortedGenres);
+
+    for (var i = 0; i < sortedMonths.length; i++) {
+      month = sortedMonths[i];
       monthTotal = dataMonths[month].total;
-      monthGenres = dataMonths[month].genres
+      monthGenres = dataMonths[month].genres;
 
       for (var genre in monthGenres) {
         genreTotal = monthGenres[genre].total;
@@ -70,15 +110,12 @@ var vizify = (function($) {
         _context.beginPath();
         _context.moveTo(originX + cursorX, originY + cursorY);
         _context.lineTo(originX + cursorX, originY + cursorY + 100);
+        // _context.quadraticCurveTo();
         _context.lineWidth = genreTotal * 0.1;
-        if (!(genre in genreColors)) {
-          genreColors[genre] = _colors[colorIndex];
-          colorIndex++;
-        }
-        _context.strokeStyle = genreColors[genre]
+        _context.strokeStyle = genreMetaData[genre].color;
         _context.stroke();
 
-        cursorX += genreTotal * 0.1 * 0.5 + 5;
+        cursorX += _context.lineWidth * 0.5;
         cursorY = 0;
 
         // for (var subgenre in genreSubgenres) {
@@ -87,8 +124,10 @@ var vizify = (function($) {
         // }
       }
 
-      cursorX += 20;
+      cursorX += 80;
     }
+
+    console.log(genreMetaData);
   }
 
   return _vizify;

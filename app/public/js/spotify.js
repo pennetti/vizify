@@ -77,12 +77,13 @@ var spotifyApi = (function($) {
    * @param  {id} user id to use when looking up starred playlist
    * @return {promise} ajax promise
    */
-  _spotifyApi.prototype.getUserStarredTracks = function(offset, limit, id, callback) {
-    // TODO: check if starred playlist is public
-    return callSpotifyWebApi(
-      'users/' + id + '/starred/tracks?' +
-      $.param({ limit: limit, offset: offset }), {}, callback);
-  };
+  _spotifyApi.prototype
+    .getUserStarredTracks = function(offset, limit, id, callback) {
+      // TODO: check if starred playlist is public
+      return callSpotifyWebApi(
+        'users/' + id + '/starred/tracks?' +
+        $.param({ limit: limit, offset: offset }), {}, callback);
+    };
 
   /**
    * Get the artist object that corresponds to the ID

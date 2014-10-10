@@ -2,42 +2,7 @@ var vizifyData = (function($) {
 
   $.whenall = function(arr) { return $.when.apply($, arr); };
 
-  function roughSizeOfObject( object ) {
-
-      var objectList = [];
-      var stack = [ object ];
-      var bytes = 0;
-
-      while ( stack.length ) {
-          var value = stack.pop();
-
-          if ( typeof value === 'boolean' ) {
-              bytes += 4;
-          }
-          else if ( typeof value === 'string' ) {
-              bytes += value.length * 2;
-          }
-          else if ( typeof value === 'number' ) {
-              bytes += 8;
-          }
-          else if
-          (
-              typeof value === 'object'
-              && objectList.indexOf( value ) === -1
-          )
-          {
-              objectList.push( value );
-
-              for( var i in value ) {
-                  stack.push( value[ i ] );
-              }
-          }
-      }
-      return bytes;
-  }
-
   Storage.prototype.setObject = function(key, value) {
-    console.log(key, roughSizeOfObject(value) / 1000000);
     this.setItem(key, JSON.stringify(value));
   };
 
@@ -49,11 +14,10 @@ var vizifyData = (function($) {
   var _sp = new spotifyApi(),
 
       _data = { months: {}, total: 0 },
-      _tracks = { total: 0 }, // (trackId, {track})
-      _genres = { total: 0 }, // (subgenre, {family, artists})
-      _months = { total: 0 }, // (month, [trackId])
+      _tracks = { total: 0 }, // track -> artist
+      _genres = { total: 0 }, // subgenre -> genre
       _genreFamilies = { total: 0 },
-      _artists = { total: 0 };
+      _artists = { total: 0 }; // artist -> subgenre
 
   /**
    * Constructor
@@ -214,15 +178,18 @@ var vizifyData = (function($) {
       _months = localStorage.getObject('_months');
     } else {
       getMonths();
+      localStorage.setObject('_months', _months);
     }
 
-    if (localStorage.getItem('_artists')) {
+    if (localStorage.getItem('_artists') && localStorage.getItem('_genres')) {
       _artists = localStorage.getObject('_artists');
-      localStorage.setObject('_genres', _genres);
+      _genres = localStorage.getObject('_genres');
       deferred.resolve();
     } else {
       getArtists().then(function() {
         getGenres();
+        localStorage.setObject('_artists', _artists);
+        localStorage.setObject('_genres', _genres);
         deferred.resolve();
       });
     }
@@ -440,7 +407,7 @@ var vizifyData = (function($) {
                       }
                   } else {
                     subgenres[subgenre] = {};
-                    subgenres[subgenre].total = 1
+                    subgenres[subgenre].total = 1;
                     subgenres[subgenre].artists =
                       [_tracks[trackIds[i]].artists[j]];
                   }
