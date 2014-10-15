@@ -59,8 +59,12 @@ var vizify = (function($) {
         sortedMonths = null,
         genre = null,
         sortedGenres = null,
+        sortedMonthGenres = null,
 
-        originX = 0,
+        vizWidth = _canvas.width - 100,
+        vizHeight = _canvas.height - 100,
+
+        originX = 100,
         originY = 0,
         currentMonthX = null,
         currentMonthY = null,
@@ -87,7 +91,7 @@ var vizify = (function($) {
           genreMetaData[genre].total = dataMonths[month].genres[genre].total;
           genreMetaData[genre].color = _colors[colorIndex];
           genreMetaData[genre].cursorX = 0;
-          genreMetaData[genre].cursorY = 0;
+          genreMetaData[genre].cursorY = vizHeight;
           colorIndex++;
         }
       }
@@ -96,14 +100,17 @@ var vizify = (function($) {
     sortedGenres = Object.keys(genreMetaData).sort(function(a, b) {
       return -(genreMetaData[a].total - genreMetaData[b].total);
     });
-    console.log(sortedGenres);
 
     for (var i = 0; i < sortedMonths.length; i++) {
       month = sortedMonths[i];
       monthTotal = dataMonths[month].total;
       monthGenres = dataMonths[month].genres;
+      sortedMonthGenres = Object.keys(monthGenres).sort(function(a, b) {
+        return -(monthGenres[a].total - monthGenres[b].total);
+      });
 
-      for (var genre in monthGenres) {
+      for (var j = 0; j < sortedMonthGenres.length; j++) {
+        genre = sortedMonthGenres[j];
         genreTotal = monthGenres[genre].total;
         genreSubgenres = monthGenres[genre].subgenres;
 
@@ -111,7 +118,9 @@ var vizify = (function($) {
         _context.moveTo(originX + cursorX, originY + cursorY);
         _context.lineTo(originX + cursorX, originY + cursorY + 100);
         // _context.quadraticCurveTo();
+        // TODO: normalize data (gnereTotal)
         _context.lineWidth = genreTotal * 0.1;
+        console.log(genre, genreMetaData[genre].color);
         _context.strokeStyle = genreMetaData[genre].color;
         _context.stroke();
 
@@ -123,11 +132,10 @@ var vizify = (function($) {
         //   subgenreArtists = genreSubgenres[subgenre].artists;
         // }
       }
+      // console.log(genreMetaData);
 
       cursorX += 80;
     }
-
-    console.log(genreMetaData);
   }
 
   return _vizify;

@@ -326,7 +326,9 @@ var vizifyData = (function($) {
     return genres;
   }
 
-
+  /**
+   *
+   */
   function buildDataObject() {
     /**
      *{
