@@ -1,12 +1,5 @@
 var vizify = (function($) {
 
-  //@ http://jsfromhell.com/array/shuffle [v1.0]
-  function shuffle(o) { //v1.0
-    for (var j, x, i = o.length; i; j = Math.floor(Math.random() * i),
-      x = o[--i], o[i] = o[j], o[j] = x);
-    return o;
-  };
-
   var _vd = new vizifyData(),
       _canvas = document.getElementById('vizifyCanvas'),
       _context = _canvas.getContext('2d'),
@@ -24,13 +17,13 @@ var vizify = (function($) {
         '#A0A0A0', '#E00000', '#00E000', '#0000E0', '#E0E000', '#E000E0',
         '#00E0E0', '#E0E0E0'];
 
-  // _colors = shuffle(_colors);
-
   var _vizify = function() {
 
   };
 
-
+  /**
+   *
+   */
   _vizify.prototype.getVisualization = function() {
 
     var deferred = $.Deferred();
@@ -64,15 +57,16 @@ var vizify = (function($) {
         vizWidth = _canvas.width - 100,
         vizHeight = _canvas.height - 100,
 
-        originX = 100,
-        originY = 0,
+        originX = 0.0,
+        originY = 0.0,
         currentMonthX = null,
         currentMonthY = null,
         currentGenreX = null,
         currentGenreY = null,
 
-        cursorX = 0,
-        cursorY = 0,
+        cursorX = 0.0,
+        cursorY = 0.0,
+        lineWidth = 0.0,
 
         colorIndex = 0,
         genreMetaData = {}; // color, cursor, total
@@ -101,6 +95,14 @@ var vizify = (function($) {
       return -(genreMetaData[a].total - genreMetaData[b].total);
     });
 
+    // TODO: normalization is also needed here
+    var cursor = 0;
+    for (var i = 0; i < sortedGenres.length; i++) {
+      genre = genreMetaData[sortedGenres[i]];
+      genre.cursorX = cursor;
+      cursor += genre.total * 0.1;
+    }
+
     for (var i = 0; i < sortedMonths.length; i++) {
       month = sortedMonths[i];
       monthTotal = dataMonths[month].total;
@@ -113,18 +115,35 @@ var vizify = (function($) {
         genre = sortedMonthGenres[j];
         genreTotal = monthGenres[genre].total;
         genreSubgenres = monthGenres[genre].subgenres;
+        // TODO: normalize data (genreTotal)
+        lineWidth = genreTotal * 0.1;
 
         _context.beginPath();
+
+        cursorX += lineWidth * 0.5;
+
         _context.moveTo(originX + cursorX, originY + cursorY);
-        _context.lineTo(originX + cursorX, originY + cursorY + 100);
-        // _context.quadraticCurveTo();
-        // TODO: normalize data (gnereTotal)
-        _context.lineWidth = genreTotal * 0.1;
-        console.log(genre, genreMetaData[genre].color);
+        _context.lineTo(originX + cursorX, vizHeight / 4);
+        _context.quadraticCurveTo(
+          originX + cursorX + ((genreMetaData[genre].cursorX - cursorX) / 4),
+          3 * vizHeight / 8,
+          originX + cursorX + ((genreMetaData[genre].cursorX - cursorX) / 2),
+          vizHeight / 2);
+        _context.quadraticCurveTo(
+          originX + cursorX +
+            (3 * (genreMetaData[genre].cursorX - cursorX) / 4),
+          5 * vizHeight / 8,
+          originX + genreMetaData[genre].cursorX,
+          3 * vizHeight / 4);
+        _context.lineTo(originX + genreMetaData[genre].cursorX, vizHeight);
+
+        _context.globalAlpha = 0.5;
+        _context.lineWidth = lineWidth;
+        _context.lineJoin = 'round';
         _context.strokeStyle = genreMetaData[genre].color;
         _context.stroke();
 
-        cursorX += _context.lineWidth * 0.5;
+        cursorX += lineWidth * 0.5;
         cursorY = 0;
 
         // for (var subgenre in genreSubgenres) {
