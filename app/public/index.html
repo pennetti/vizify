@@ -13,6 +13,9 @@
         width: 80px;
         text-align: center;
       }
+      #vizifyCanvas {
+        padding-top: 80px;
+      }
     </style>
   </head>
   <body>
@@ -31,7 +34,7 @@
           </div>
         </div>
       </div>
-      <div id='hero' class='hero-unit'>
+<!--       <div id='hero' class='hero-unit'>
         <div class='container'>
           <h1> Vizify </h1>
           <p class='lead'> Visualize your Spotify collection. </p>
@@ -40,12 +43,10 @@
           </button>
           <div id='info'></div>
         </div>
-      </div>
+      </div> -->
     </div>
 
-    <div class='container'>
-      <canvas id='vizifyCanvas' width='800' height='600'></canvas>
-    </div>
+    <canvas id='vizifyCanvas' width='2400' height='2400'></canvas>
 
     <script src='http://code.jquery.com/jquery-1.10.1.min.js'></script>
     <script src='/js/spotify.js'></script>
@@ -91,11 +92,14 @@
         }
 
         // TODO: add static variables http://stackoverflow.com/a/1535687/854645
-
-        document.getElementById('vizify').addEventListener('click', function() {
-          var _vizify = new vizify();
+        var _vizify = new vizify();
+        _vizify.getVisualization();
+        // TODO: consider just drawing so it doesn't have to re-fetch data
+        window.addEventListener('resize', function() {
           _vizify.getVisualization();
-        });
+        }, true);
+        // document.getElementById('vizify').addEventListener('click', function() {
+        // });
 
       })();
     </script>

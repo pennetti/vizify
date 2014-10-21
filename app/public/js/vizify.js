@@ -2,9 +2,10 @@ var vizify = (function($) {
 
   var _vd = new vizifyData(),
       _canvas = document.getElementById('vizifyCanvas'),
-      _context = _canvas.getContext('2d'),
+      _ctx = _canvas.getContext('2d'),
       // TODO: need more colors, determine number of genres
       // TODO: make color less boring
+      // http://stackoverflow.com/a/309193/854645
       _colors = [
         '#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF',
         '#000000', '#800000', '#008000', '#000080', '#808000', '#800080',
@@ -39,6 +40,10 @@ var vizify = (function($) {
 
   function draw(data) {
 
+    // dynamic resizing
+    _ctx.canvas.width = window.innerWidth;
+    _ctx.canvas.height = window.innerHeight;
+
     var dataTotal = null,
         dataMonths = null,
         monthTotal = null,
@@ -54,8 +59,8 @@ var vizify = (function($) {
         sortedGenres = null,
         sortedMonthGenres = null,
 
-        vizWidth = _canvas.width - 100,
-        vizHeight = _canvas.height - 100,
+        vizWidth = _canvas.width,
+        vizHeight = _canvas.height,
 
         originX = 0.0,
         originY = 0.0,
@@ -67,6 +72,8 @@ var vizify = (function($) {
         cursorX = 0.0,
         cursorY = 0.0,
         lineWidth = 0.0,
+        genreLineWidth = 0.0, //move this up
+        topSeparatorWidth = 0.0,
 
         colorIndex = 0,
         genreMetaData = {}; // color, cursor, total
@@ -74,6 +81,9 @@ var vizify = (function($) {
     dataTotal = data.total;
     dataMonths = data.months;
     sortedMonths = Object.keys(dataMonths).sort();
+
+    lineWidth = (_ctx.canvas.width * 0.7) / dataTotal;
+    topSeparatorWidth = (_ctx.canvas.width * 0.3) / (sortedMonths.length - 1);
 
     for (var i = 0; i < sortedMonths.length; i++) {
       month = sortedMonths[i];
@@ -95,12 +105,12 @@ var vizify = (function($) {
       return -(genreMetaData[a].total - genreMetaData[b].total);
     });
 
-    // TODO: normalization is also needed here
     var cursor = 0;
     for (var i = 0; i < sortedGenres.length; i++) {
       genre = genreMetaData[sortedGenres[i]];
       genre.cursorX = cursor;
-      cursor += genre.total * 0.1;
+      cursor += genre.total * lineWidth;
+      // cursor += 40; // save as constant space b/n months BTM_SEPARATOR
     }
 
     for (var i = 0; i < sortedMonths.length; i++) {
@@ -115,35 +125,42 @@ var vizify = (function($) {
         genre = sortedMonthGenres[j];
         genreTotal = monthGenres[genre].total;
         genreSubgenres = monthGenres[genre].subgenres;
-        // TODO: normalize data (genreTotal)
-        lineWidth = genreTotal * 0.1;
+        genreLineWidth = lineWidth * genreTotal;
 
-        _context.beginPath();
+        _ctx.beginPath();
 
-        cursorX += lineWidth * 0.5;
+        cursorX += genreLineWidth * 0.5;
+        genreMetaData[genre].cursorX += genreLineWidth * 0.5;
 
-        _context.moveTo(originX + cursorX, originY + cursorY);
-        _context.lineTo(originX + cursorX, vizHeight / 4);
-        _context.quadraticCurveTo(
+        _ctx.moveTo(originX + cursorX, originY + cursorY);
+        _ctx.lineTo(originX + cursorX, vizHeight / 4);
+        // TODO: y coordinate based on line color
+        _ctx.arcTo(
           originX + cursorX + ((genreMetaData[genre].cursorX - cursorX) / 4),
-          3 * vizHeight / 8,
+          vizHeight / 2,
           originX + cursorX + ((genreMetaData[genre].cursorX - cursorX) / 2),
-          vizHeight / 2);
-        _context.quadraticCurveTo(
+          vizHeight / 2,
+          vizHeight / 8);
+        // _ctx.lineTo(
+        //   originX + genreMetaData[genre].cursorX,
+        //   vizHeight / 2);
+        _ctx.arcTo(
           originX + cursorX +
             (3 * (genreMetaData[genre].cursorX - cursorX) / 4),
-          5 * vizHeight / 8,
+          vizHeight / 2,
           originX + genreMetaData[genre].cursorX,
-          3 * vizHeight / 4);
-        _context.lineTo(originX + genreMetaData[genre].cursorX, vizHeight);
+          3 * vizHeight / 4,
+          vizHeight / 8);
+        _ctx.lineTo(originX + genreMetaData[genre].cursorX, vizHeight);
 
-        _context.globalAlpha = 0.5;
-        _context.lineWidth = lineWidth;
-        _context.lineJoin = 'round';
-        _context.strokeStyle = genreMetaData[genre].color;
-        _context.stroke();
+        _ctx.globalAlpha = 0.5;
+        _ctx.lineWidth = genreLineWidth;
+        // _ctx.lineJoin = 'round';
+        _ctx.strokeStyle = genreMetaData[genre].color;
+        _ctx.stroke();
 
-        cursorX += lineWidth * 0.5;
+        genreMetaData[genre].cursorX += genreLineWidth * 0.5;
+        cursorX += genreLineWidth * 0.5;
         cursorY = 0;
 
         // for (var subgenre in genreSubgenres) {
@@ -153,7 +170,7 @@ var vizify = (function($) {
       }
       // console.log(genreMetaData);
 
-      cursorX += 80;
+      cursorX += topSeparatorWidth;  // TOP_SEPARATOR
     }
   }
 
