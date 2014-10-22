@@ -37,6 +37,8 @@ var vizifyData = (function($) {
     getTracks().then(function(tracks) {
       getData().then(function() {
         buildDataObject();
+    console.log(_genreFamilies);
+
         deferred.resolve(_data);
       });
     });

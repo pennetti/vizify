@@ -3,20 +3,16 @@ var vizify = (function($) {
   var _vd = new vizifyData(),
       _canvas = document.getElementById('vizifyCanvas'),
       _ctx = _canvas.getContext('2d'),
-      // TODO: need more colors, determine number of genres
-      // TODO: make color less boring
-      // http://stackoverflow.com/a/309193/854645
+      // 16 colors for 15 genre families and a misc. family
+      // http://flatuicolors.com/
+      // ['#1abc9c', '#2ecc71', '#3498db', '#9b59b6', '#34495e', '#16a085',
+      // '#27ae60', '#2980b9', '#8e44ad', '#2c3e50', '#f1c40f', '#e67e22',
+      // '#e74c3c', '#ecf0f1', '#95a5a6', '#f39c12', '#d35400', '#c0392b',
+      // '#bdc3c7', '#7f8c8d']
       _colors = [
-        '#FF0000', '#00FF00', '#0000FF', '#FFFF00', '#FF00FF', '#00FFFF',
-        '#000000', '#800000', '#008000', '#000080', '#808000', '#800080',
-        '#008080', '#808080', '#C00000', '#00C000', '#0000C0', '#C0C000',
-        '#C000C0', '#00C0C0', '#C0C0C0', '#400000', '#004000', '#000040',
-        '#404000', '#400040', '#004040', '#404040', '#200000', '#002000',
-        '#000020', '#202000', '#200020', '#002020', '#202020', '#600000',
-        '#006000', '#000060', '#606000', '#600060', '#006060', '#606060',
-        '#A00000', '#00A000', '#0000A0', '#A0A000', '#A000A0', '#00A0A0',
-        '#A0A0A0', '#E00000', '#00E000', '#0000E0', '#E0E000', '#E000E0',
-        '#00E0E0', '#E0E0E0'];
+        '#E74C3C', '#2ECC71', '#3498DB', '#E67E22', '#1ABC9C', '#9B59B6',
+        '#F1C40F', '#27AE60', '#2980B9', '#C0392B', '#16A085', '#8E44AD',
+        '#34495E', '#D35400', '#95A5A6', '#F39C12'];
 
   var _vizify = function() {
 
@@ -73,7 +69,8 @@ var vizify = (function($) {
         cursorY = 0.0,
         lineWidth = 0.0,
         genreLineWidth = 0.0, //move this up
-        topSeparatorWidth = 0.0,
+        topPadding = 0.0,
+        btmPadding = 0.0,
 
         colorIndex = 0,
         genreMetaData = {}; // color, cursor, total
@@ -82,8 +79,10 @@ var vizify = (function($) {
     dataMonths = data.months;
     sortedMonths = Object.keys(dataMonths).sort();
 
-    lineWidth = (_ctx.canvas.width * 0.7) / dataTotal;
-    topSeparatorWidth = (_ctx.canvas.width * 0.3) / (sortedMonths.length - 1);
+    // TODO: why is canvas off by so much??
+    lineWidth = (_ctx.canvas.width * 0.7) / (dataTotal * 2);
+    topPadding = (_ctx.canvas.width * 0.3) / (sortedMonths.length - 1);
+    btmPadding = (_ctx.canvas.width * 0.3) * 0.5;
 
     for (var i = 0; i < sortedMonths.length; i++) {
       month = sortedMonths[i];
@@ -105,7 +104,7 @@ var vizify = (function($) {
       return -(genreMetaData[a].total - genreMetaData[b].total);
     });
 
-    var cursor = 0;
+    var cursor = btmPadding;
     for (var i = 0; i < sortedGenres.length; i++) {
       genre = genreMetaData[sortedGenres[i]];
       genre.cursorX = cursor;
@@ -120,7 +119,7 @@ var vizify = (function($) {
       sortedMonthGenres = Object.keys(monthGenres).sort(function(a, b) {
         return -(monthGenres[a].total - monthGenres[b].total);
       });
-
+      console.log(sortedMonthGenres.length);
       for (var j = 0; j < sortedMonthGenres.length; j++) {
         genre = sortedMonthGenres[j];
         genreTotal = monthGenres[genre].total;
@@ -153,7 +152,7 @@ var vizify = (function($) {
           vizHeight / 8);
         _ctx.lineTo(originX + genreMetaData[genre].cursorX, vizHeight);
 
-        _ctx.globalAlpha = 0.5;
+        _ctx.globalAlpha = 0.9;
         _ctx.lineWidth = genreLineWidth;
         // _ctx.lineJoin = 'round';
         _ctx.strokeStyle = genreMetaData[genre].color;
@@ -170,7 +169,7 @@ var vizify = (function($) {
       }
       // console.log(genreMetaData);
 
-      cursorX += topSeparatorWidth;  // TOP_SEPARATOR
+      cursorX += topPadding;  // TOP_SEPARATOR
     }
   }
 
