@@ -1,5 +1,7 @@
 var vizifyData = (function($) {
 
+  // TODO: add option to get tracks from all playlists
+
   $.whenall = function(arr) { return $.when.apply($, arr); };
 
   Storage.prototype.setObject = function(key, value) {
@@ -22,10 +24,7 @@ var vizifyData = (function($) {
   /**
    * Constructor
    */
-  var _vizifyData = function() {
-
-
-  };
+  var _vizifyData = function() {};
 
   /**
    *
@@ -37,8 +36,6 @@ var vizifyData = (function($) {
     getTracks().then(function(tracks) {
       getData().then(function() {
         buildDataObject();
-    console.log(_genreFamilies);
-
         deferred.resolve(_data);
       });
     });

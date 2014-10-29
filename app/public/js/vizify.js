@@ -26,7 +26,6 @@ var vizify = (function($) {
     var deferred = $.Deferred();
 
     _vd.getDataObject().then(function(data) {
-      console.log(data);
       draw(data);
       deferred.resolve();
     });
@@ -58,118 +57,140 @@ var vizify = (function($) {
         vizWidth = _canvas.width,
         vizHeight = _canvas.height,
 
-        originX = 0.0,
-        originY = 0.0,
+        originX = 0,
+        originY = 0,
         currentMonthX = null,
         currentMonthY = null,
         currentGenreX = null,
         currentGenreY = null,
 
-        cursorX = 0.0,
-        cursorY = 0.0,
-        lineWidth = 0.0,
-        genreLineWidth = 0.0, //move this up
-        topPadding = 0.0,
-        btmPadding = 0.0,
+        cursorX = 0,
+        cursorY = 0,
+        lineWidth = 0,
+        arcRadius = 0,
+        genreLineWidth = 0,
+        topPaddingX = 0,
+        topPaddingY = 0,
+        btmPaddingX = 0,
+        btmPaddingY = 0,
 
         colorIndex = 0,
-        genreMetaData = {}; // color, cursor, total
+        genreMetadata = {};
 
     dataTotal = data.total;
     dataMonths = data.months;
     sortedMonths = Object.keys(dataMonths).sort();
 
     // TODO: why is canvas off by so much??
+    // console.log(_ctx.canvas.width, dataTotal);
+    arcRadius = 0; // normalize?
     lineWidth = (_ctx.canvas.width * 0.7) / (dataTotal * 2);
-    topPadding = (_ctx.canvas.width * 0.3) / (sortedMonths.length - 1);
-    btmPadding = (_ctx.canvas.width * 0.3) * 0.5;
+    topPaddingX = (_ctx.canvas.width * 0.3) / (sortedMonths.length - 1);
+    topPaddingY = _ctx.canvas.height / 8;
+    btmPaddingX = (_ctx.canvas.width * 0.3) * 0.5;
+    btmPaddingY = (7 * _ctx.canvas.height) / 8;
 
+    // Get genre metadata
     for (var i = 0; i < sortedMonths.length; i++) {
       month = sortedMonths[i];
       for (var genre in dataMonths[month].genres) {
-        if (genre in genreMetaData) {
-          genreMetaData[genre].total += dataMonths[month].genres[genre].total;
+        if (genre in genreMetadata) {
+          genreMetadata[genre].total += dataMonths[month].genres[genre].total;
         } else {
-          genreMetaData[genre] = {};
-          genreMetaData[genre].total = dataMonths[month].genres[genre].total;
-          genreMetaData[genre].color = _colors[colorIndex];
-          genreMetaData[genre].cursorX = 0;
-          genreMetaData[genre].cursorY = vizHeight;
+          genreMetadata[genre] = {};
+          genreMetadata[genre].total = dataMonths[month].genres[genre].total;
+          genreMetadata[genre].color = _colors[colorIndex];
+          genreMetadata[genre].order = colorIndex;  // make new variable?
+          genreMetadata[genre].cursorX = 0;
+          genreMetadata[genre].cursorY = 0;
           colorIndex++;
         }
       }
     }
 
-    sortedGenres = Object.keys(genreMetaData).sort(function(a, b) {
-      return -(genreMetaData[a].total - genreMetaData[b].total);
+    // Sort by chronological order added to the collection
+    // TODO: check if order is guaranteed for object keys
+    sortedGenres = Object.keys(genreMetadata).sort(function(a, b) {
+      return genreMetadata[a].order - genreMetadata[b].order;
     });
 
-    var cursor = btmPadding;
-    for (var i = 0; i < sortedGenres.length; i++) {
-      genre = genreMetaData[sortedGenres[i]];
-      genre.cursorX = cursor;
-      cursor += genre.total * lineWidth;
-      // cursor += 40; // save as constant space b/n months BTM_SEPARATOR
+
+    // Sort from largest to smallest
+    sortedGenres = Object.keys(genreMetadata).sort(function(a, b) {
+      return -(genreMetadata[a].total - genreMetadata[b].total);
+    });
+    for (var i = 0, cursorY = topPaddingY + arcRadius; i < sortedGenres.length; i++) {
+      genre = genreMetadata[sortedGenres[i]];
+      genre.cursorY = cursorY;
+      // TODO: normalize this to the viz height
+      cursorY += genre.total * lineWidth * 0.5;
     }
 
-    for (var i = 0; i < sortedMonths.length; i++) {
+    for (var i = 0, cursorX = btmPaddingX; i < sortedGenres.length; i++) {
+      genre = genreMetadata[sortedGenres[i]];
+      genre.cursorX = cursorX;
+      cursorX += genre.total * lineWidth;
+    }
+
+    for (var i = 0, cursorX = 0, cursorY = 0; i < sortedMonths.length; i++) {
       month = sortedMonths[i];
       monthTotal = dataMonths[month].total;
       monthGenres = dataMonths[month].genres;
       sortedMonthGenres = Object.keys(monthGenres).sort(function(a, b) {
         return -(monthGenres[a].total - monthGenres[b].total);
       });
-      console.log(sortedMonthGenres.length);
+
       for (var j = 0; j < sortedMonthGenres.length; j++) {
         genre = sortedMonthGenres[j];
+        genreData = genreMetadata[genre];
         genreTotal = monthGenres[genre].total;
-        genreSubgenres = monthGenres[genre].subgenres;
         genreLineWidth = lineWidth * genreTotal;
+        genreSubgenres = monthGenres[genre].subgenres;
 
         _ctx.beginPath();
 
         cursorX += genreLineWidth * 0.5;
-        genreMetaData[genre].cursorX += genreLineWidth * 0.5;
+        genreData.cursorX += genreLineWidth * 0.5;
+        genreData.cursorY += genreLineWidth * 0.1;
 
         _ctx.moveTo(originX + cursorX, originY + cursorY);
-        _ctx.lineTo(originX + cursorX, vizHeight / 4);
-        // TODO: y coordinate based on line color
+
+        _ctx.lineTo(originX + cursorX, topPaddingY);
+        _ctx.lineTo(originX + cursorX, genreData.cursorY - arcRadius);
         _ctx.arcTo(
-          originX + cursorX + ((genreMetaData[genre].cursorX - cursorX) / 4),
-          vizHeight / 2,
-          originX + cursorX + ((genreMetaData[genre].cursorX - cursorX) / 2),
-          vizHeight / 2,
-          vizHeight / 8);
-        // _ctx.lineTo(
-        //   originX + genreMetaData[genre].cursorX,
-        //   vizHeight / 2);
+          originX + cursorX + ((genreData.cursorX - cursorX) / 4),
+          originY + genreData.cursorY,
+          originX + cursorX + ((genreData.cursorX - cursorX) / 2),
+          originY + genreData.cursorY,
+          arcRadius);
+        // console.log(cursorX, genreData.cursorX);
+        _ctx.lineTo(
+          originX + genreData.cursorX,
+          originY + genreData.cursorY);
         _ctx.arcTo(
-          originX + cursorX +
-            (3 * (genreMetaData[genre].cursorX - cursorX) / 4),
-          vizHeight / 2,
-          originX + genreMetaData[genre].cursorX,
-          3 * vizHeight / 4,
-          vizHeight / 8);
-        _ctx.lineTo(originX + genreMetaData[genre].cursorX, vizHeight);
+          originX + genreData.cursorX,
+          originY + genreData.cursorY,
+          originX + genreData.cursorX,
+          originY + genreData.cursorY + arcRadius,
+          arcRadius);
+        _ctx.lineTo(originX + genreData.cursorX, vizHeight);
 
         _ctx.globalAlpha = 0.9;
         _ctx.lineWidth = genreLineWidth;
-        // _ctx.lineJoin = 'round';
-        _ctx.strokeStyle = genreMetaData[genre].color;
+        _ctx.strokeStyle = genreData.color;
         _ctx.stroke();
 
-        genreMetaData[genre].cursorX += genreLineWidth * 0.5;
+        genreData.cursorX += genreLineWidth * 0.5;
+        genreData.cursorY += genreLineWidth * 0.5;
         cursorX += genreLineWidth * 0.5;
-        cursorY = 0;
 
         // for (var subgenre in genreSubgenres) {
         //   subgenreTotal = genreSubgenres[subgenre].total;
         //   subgenreArtists = genreSubgenres[subgenre].artists;
         // }
       }
-      // console.log(genreMetaData);
 
-      cursorX += topPadding;  // TOP_SEPARATOR
+      cursorX += topPaddingX;
     }
   }
 
