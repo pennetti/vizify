@@ -54,8 +54,8 @@ var vizify = (function($) {
         sortedGenres = null,
         sortedMonthGenres = null,
 
-        vizWidth = _canvas.width,
-        vizHeight = _canvas.height,
+        // vizWidth = _canvas.width,
+        // vizHeight = _canvas.height,
 
         originX = 0,
         originY = 0,
@@ -81,10 +81,8 @@ var vizify = (function($) {
     dataMonths = data.months;
     sortedMonths = Object.keys(dataMonths).sort();
 
-    // TODO: why is canvas off by so much??
-    // console.log(_ctx.canvas.width, dataTotal);
-    arcRadius = 0; // normalize?
-    lineWidth = (_ctx.canvas.width * 0.7) / (dataTotal * 2);
+    arcRadius = 0;
+    lineWidth = (_ctx.canvas.width * 0.75) / (2 * dataTotal);
     topPaddingX = (_ctx.canvas.width * 0.3) / (sortedMonths.length - 1);
     topPaddingY = _ctx.canvas.height / 8;
     btmPaddingX = (_ctx.canvas.width * 0.3) * 0.5;
@@ -114,16 +112,16 @@ var vizify = (function($) {
       return genreMetadata[a].order - genreMetadata[b].order;
     });
 
-
     // Sort from largest to smallest
     sortedGenres = Object.keys(genreMetadata).sort(function(a, b) {
       return -(genreMetadata[a].total - genreMetadata[b].total);
     });
+
     for (var i = 0, cursorY = topPaddingY + arcRadius; i < sortedGenres.length; i++) {
       genre = genreMetadata[sortedGenres[i]];
       genre.cursorY = cursorY;
-      // TODO: normalize this to the viz height
-      cursorY += genre.total * lineWidth * 0.5;
+      cursorY += genre.total * lineWidth *
+        (3 * _ctx.canvas.height / (4 * lineWidth * dataTotal * 2));
     }
 
     for (var i = 0, cursorX = btmPaddingX; i < sortedGenres.length; i++) {
@@ -173,7 +171,7 @@ var vizify = (function($) {
           originX + genreData.cursorX,
           originY + genreData.cursorY + arcRadius,
           arcRadius);
-        _ctx.lineTo(originX + genreData.cursorX, vizHeight);
+        _ctx.lineTo(originX + genreData.cursorX, _ctx.canvas.height);
 
         _ctx.globalAlpha = 0.9;
         _ctx.lineWidth = genreLineWidth;
