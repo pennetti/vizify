@@ -1,13 +1,23 @@
 var vizifyData = (function($) {
 
+  // TODO: make this functional
   // TODO: add option to get tracks from all playlists
 
+  /**
+   *
+   */
   $.whenall = function(arr) { return $.when.apply($, arr); };
 
-  Storage.prototype.setObject = function(key, value) {
+  /**
+   *
+   */
+   Storage.prototype.setObject = function(key, value) {
     this.setItem(key, JSON.stringify(value));
   };
 
+  /**
+   *
+   */
   Storage.prototype.getObject = function(key) {
     var value = this.getItem(key);
     return value && JSON.parse(value);
@@ -15,11 +25,12 @@ var vizifyData = (function($) {
 
   var _sp = new spotifyApi(),
 
-      _data = { months: {}, total: 0 },
+      _months = {},
       _tracks = { total: 0 }, // track -> artist
+      _artists = { total: 0 }, // artist -> subgenre
       _genres = { total: 0 }, // subgenre -> genre
       _genreFamilies = { total: 0 },
-      _artists = { total: 0 }; // artist -> subgenre
+      _data = { months: {}, total: 0 };
 
   /**
    * Constructor
@@ -33,10 +44,13 @@ var vizifyData = (function($) {
 
     var deferred = $.Deferred();
 
-    getTracks().then(function(tracks) {
+    getTracks().then(function() {
       getData().then(function() {
-        buildDataObject();
+        buildDataObject(deferred);
         deferred.resolve(_data);
+      })
+      .progress(function(percentComplete) {
+        console.log('getDataObject: ', percentComplete);
       });
     });
 
@@ -58,23 +72,19 @@ var vizifyData = (function($) {
         getUserStarredPlaylist().then(function() {
           localStorage.setObject('_tracks', _tracks);
           deferred.resolve(_tracks);
+        })
+        .progress(function(percentComplete) {
+          console.log('getUserStarredPlaylist: ', percentComplete);
+          progressBar('userStarredPlaylistProgressBar', percentComplete);
         });
+      })
+      .progress(function(percentComplete) {
+        console.log('getUserLibrary: ', percentComplete);
+        progressBar('userLibraryProgressBar', percentComplete);
       });
     }
 
     return deferred.promise();
-  }
-
-  // helper
-  function processTrack(track) {
-    _tracks.total++;
-    _tracks[track.id] = {};
-    _tracks[track.id].artists = [];
-    _tracks[track.id].added_at = tracks.items[i].added_at;
-
-    for (var j = 0; j < track.artists.length; j++) {
-      _tracks[track.id].artists.push(track.artists[j].id);
-    }
   }
 
   /**
@@ -96,14 +106,19 @@ var vizifyData = (function($) {
    *
    */
   function processUserLibrary(tracks, offset, deferred) {
-    // TODO: add deferred.notify() here
-
     offset += tracks.items.length;
-    document.getElementById('vizify').innerText =
-      Math.round(offset / tracks.total * 100) + '%';
+    deferred.notify(Math.round(offset / tracks.total * 100));
 
-    for (var i = 0; i < tracks.items.length; i++) {
-      processTrack(tracks.items[i].track);
+    for (var i = 0, track = null; i < tracks.items.length; i++) {
+      track = tracks.items[i].track;
+      _tracks.total++;
+      _tracks[track.id] = {};
+      _tracks[track.id].artists = [];
+      _tracks[track.id].added_at = tracks.items[i].added_at;
+
+      for (var j = 0; j < track.artists.length; j++) {
+        _tracks[track.id].artists.push(track.artists[j].id);
+      }
     }
 
     if (tracks.next) {
@@ -137,20 +152,23 @@ var vizifyData = (function($) {
    */
   function processUserStarredPlaylist(tracks, offset, userId, deferred) {
     // TODO: add timestamp comparison to take earliest added date
-    // TODO: add deferred.notify() here
-    var track = null;
-
     offset += tracks.items.length;
-    document.getElementById('vizify').innerText =
-      Math.round(offset / tracks.total * 100) + '%';
+    deferred.notify(Math.round(offset / tracks.total * 100));
 
-    for (var i = 0; i < tracks.items.length; i++) {
+    for (var i = 0, track = null; i < tracks.items.length; i++) {
       track = tracks.items[i].track;
 
       if (track.id in _tracks) {
         _tracks[track.id].added_at = tracks.items[i].added_at;
       } else {
-        processTrack(track);
+        _tracks.total++;
+        _tracks[track.id] = {};
+        _tracks[track.id].artists = [];
+        _tracks[track.id].added_at = tracks.items[i].added_at;
+
+        for (var j = 0; j < track.artists.length; j++) {
+          _tracks[track.id].artists.push(track.artists[j].id);
+        }
       }
     }
 
@@ -180,16 +198,25 @@ var vizifyData = (function($) {
       localStorage.setObject('_months', _months);
     }
 
-    if (localStorage.getItem('_artists') && localStorage.getItem('_genres')) {
+    if (localStorage.getItem('_artists')) {
       _artists = localStorage.getObject('_artists');
-      _genres = localStorage.getObject('_genres');
+      if (localStorage.getItem('_genres')) {
+        _genres = localStorage.getObject('_genres');
+      } else {
+        getGenres();
+        localStorage.setObject('_genres', _genres);
+      }
       deferred.resolve();
     } else {
       getArtists().then(function() {
         getGenres();
-        localStorage.setObject('_artists', _artists);
         localStorage.setObject('_genres', _genres);
+        localStorage.setObject('_artists', _artists);
         deferred.resolve();
+      })
+      .progress(function(percentComplete) {
+        console.log('getArtists: ', percentComplete);
+        progressBar('genreDataProgressBar', percentComplete);
       });
     }
 
@@ -202,16 +229,16 @@ var vizifyData = (function($) {
   function getMonths() {
     /**
      *
-     *{
-     *  "2013-01": [
-     *    "TRACK_ID_1",
-     *    "TRACK_ID_2",
-     *    "TRACK_ID_3"
-     *  ],
-     *  "2013-02": [],
-     *  "2013-03": [],
-     *  "total": 0
-     *}
+     * {
+     *   "2013-01": [
+     *     "TRACK_ID_1",
+     *     "TRACK_ID_2",
+     *     "TRACK_ID_3"
+     *   ],
+     *   "2013-02": [],
+     *   "2013-03": [],
+     *   "total": 0
+     * }
      */
     var month = null;
 
@@ -234,47 +261,59 @@ var vizifyData = (function($) {
   function getArtists() {
     /**
      *
-     *{
-     *  "ARTIST_ID_1": {
-     *    "genres": [
-     *      "rock",
-     *      "alternative rock",
-     *      "classic rock"
-     *    ],
-     *    "total": 0
-     *  },
-     *  "ARTIST_ID_1": {},
-     *  "ARTIST_ID_1": {},
-     *  "total": 0
-     *}
+     * {
+     *   "ARTIST_ID_1": {
+     *     "genres": [
+     *       "rock",
+     *       "alternative rock",
+     *       "classic rock"
+     *     ],
+     *     "total": 0
+     *   },
+     *   "ARTIST_ID_1": {},
+     *   "ARTIST_ID_1": {},
+     *   "total": 0
+     * }
      */
-    var promises = [],
-        artists = {},
-        artistId = null;
+    var artists = {},
+        progress = 0,
+        promises = [],
+        artistId = null,
+        progressTotal = 0,
+        deferred = $.Deferred();
 
     for (var trackId in _tracks) {
+
       if (trackId === 'total') { continue; }
 
       for (var i = 0; i < _tracks[trackId].artists.length; i++) {
+        progressTotal++;
         artistId = _tracks[trackId].artists[i];
-
         if (artistId === null) { continue; }
 
         if (artistId in _artists) {
+          progress++;
           _artists[artistId].total++;
         } else {
           _artists.total++;
           _artists[artistId] = {};
           _artists[artistId].total = 1;
-          promises.push(_sp.getArtistById(artistId, function() {})
-            .then(function(artist) {
-              _artists[artist.id].genres = artist.genres;
-            }));
+          promises.push(_sp.getArtistById(artistId, function() {
+            progress++;
+            deferred.notify(Math.round(progress / progressTotal * 100));
+          })
+          .then(function(artist) {
+            _artists[artist.id].genres = artist.genres;
+          }));
         }
       }
     }
 
-    return $.whenall(promises);
+    $.whenall(promises).done(function() {
+      deferred.resolve();
+    });
+
+    return deferred.promise();
   }
 
   /**
@@ -283,22 +322,22 @@ var vizifyData = (function($) {
   function getGenres() {
     /**
      *
-     *{
-     *  "album rock": {
-     *    "artists": [
-     *      "ARTIST_ID_1",
-     *      "ARTIST_ID_2",
-     *      "ARTIST_ID_3"
-     *    ],
-     *    "family": [
-     *      "rock"
-     *    ],
-     *    "total": 3
-     *  },
-     *  "alternative dance": {},
-     *  "alternative hip hop": {},
-     *  "total": 100
-     *}
+     * {
+     *   "album rock": {
+     *     "artists": [
+     *       "ARTIST_ID_1",
+     *       "ARTIST_ID_2",
+     *       "ARTIST_ID_3"
+     *     ],
+     *     "family": [
+     *       "rock"
+     *     ],
+     *     "total": 3
+     *   },
+     *   "alternative dance": {},
+     *   "alternative hip hop": {},
+     *   "total": 100
+     * }
      */
     var genre = null,
         genres = {};
@@ -328,43 +367,46 @@ var vizifyData = (function($) {
   /**
    *
    */
-  function buildDataObject() {
+  function buildDataObject(deferred) {
+  // TODO: clean up, use object notation rather than dot
     /**
-     *{
-     *  "months": {
-     *    "2013-01": {
-     *      "genres": {
-     *        "rock": {
-     *          "subgenres": {
-     *            "classic rock": {
-     *              "artists": [
-     *                "ARTIST_ID_1",
-     *                "ARTIST_ID_2",
-     *                "ARTIST_ID_3"
-     *              ],
-     *              "total": 20 // total tracks in subgenre
-     *            },
-     *            "soft rock": {},
-     *            "alternative rock": {}
-     *          },
-     *          "total": 75 // total tracks in genre
-     *        },
-     *        "pop": {},
-     *        "ska": {}
-     *      },
-     *      "total": 200 // total tracks in month
-     *    },
-     *    "2013-02": {},
-     *    "2013-03": {}
-     *  },
-     *  "total": 10000 // total tracks in collection
-     *}
+     *
+     * {
+     *   "months": {
+     *     "2013-01": {
+     *       "genres": {
+     *         "rock": {
+     *           "subgenres": {
+     *             "classic rock": {
+     *               "artists": [
+     *                 "ARTIST_ID_1",
+     *                 "ARTIST_ID_2",
+     *                 "ARTIST_ID_3"
+     *               ],
+     *               "total": 20 // total tracks in subgenre
+     *             },
+     *             "soft rock": {},
+     *             "alternative rock": {}
+     *           },
+     *           "total": 75 // total tracks in genre
+     *         },
+     *         "pop": {},
+     *         "ska": {}
+     *       },
+     *       "total": 200 // total tracks in month
+     *     },
+     *     "2013-02": {},
+     *     "2013-03": {}
+     *   },
+     *   "total": 10000 // total tracks in collection
+     * }
      */
     var genre = null,
         genres = null,
         subgenre = null,
         subgenres = null,
-        trackIds = null;
+        trackIds = null,
+        progress = 0;
 
     _data.total = _tracks.total;
     _data.months = {};
@@ -372,7 +414,10 @@ var vizifyData = (function($) {
     for (var month in _months) {
       if (month === 'total') { continue; }
 
+      deferred.notify(Math.round(progress / _data.total * 100));
+
       trackIds = _months[month];
+      progress += trackIds.length;
       _data.months[month] = {};
       _data.months[month].total = trackIds.length;
       _data.months[month].genres = {};
@@ -436,13 +481,13 @@ var vizifyData = (function($) {
   function getGenreFamilies() {
     /**
      *
-     *{
-     *  "indie pop": {
-     *    "family":
-     *  },
-     *  "indietronica": {},
-     *  "indie rock": {},
-     *}
+     * {
+     *   "indie pop": {
+     *     "family": "pop"
+     *   },
+     *   "indietronica": {},
+     *   "indie rock": {},
+     * }
      */
     $.getJSON('/js/genre_families.json', function(genres) {
       for (var i = 0; i < genres.length; i++) {
@@ -461,6 +506,20 @@ var vizifyData = (function($) {
       return _genreFamilies[genre].family;
     }
     return ['other'];
+  }
+
+  function progressBar(progressBarId, percentComplete) {
+
+    var bar = $('#' + progressBarId);
+
+    // if (bar.width() >= 800) {
+    //   $('.progress').removeClass('active');
+    // } else {
+      // console.log(bar);
+      // bar.width(bar.width() + 40);
+    // }
+
+    bar.text(percentComplete + '%');
   }
 
   return _vizifyData;

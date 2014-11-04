@@ -3,7 +3,7 @@ var vizify = (function($) {
   var _vd = new vizifyData(),
       _canvas = document.getElementById('vizifyCanvas'),
       _ctx = _canvas.getContext('2d'),
-      // 16 colors for 15 genre families and a misc. family
+      // 16 colors = 15 genre families + 1 misc. family
       // http://flatuicolors.com/
       // ['#1abc9c', '#2ecc71', '#3498db', '#9b59b6', '#34495e', '#16a085',
       // '#27ae60', '#2980b9', '#8e44ad', '#2c3e50', '#f1c40f', '#e67e22',
@@ -17,6 +17,23 @@ var vizify = (function($) {
   var _vizify = function() {
 
   };
+
+  // $(document).ready(function(){
+
+  //   var progress = setInterval(function() {
+  //   var $bar = $('.bar');
+
+  //   if ($bar.width() === 400) {
+  //     clearInterval(progress);
+  //     $('.progress').removeClass('active');
+  //   } else {
+  //     $bar.width($bar.width() + 40);
+  //   }
+
+  //     $bar.text($bar.width() / 4 + "%");
+  //   }, 800);
+
+  // });
 
   /**
    *
@@ -56,6 +73,7 @@ var vizify = (function($) {
 
         // vizWidth = _canvas.width,
         // vizHeight = _canvas.height,
+        i = 0,
 
         originX = 0,
         originY = 0,
@@ -89,18 +107,20 @@ var vizify = (function($) {
     btmPaddingY = (7 * _ctx.canvas.height) / 8;
 
     // Get genre metadata
-    for (var i = 0; i < sortedMonths.length; i++) {
+    for (i = 0; i < sortedMonths.length; i++) {
       month = sortedMonths[i];
-      for (var genre in dataMonths[month].genres) {
-        if (genre in genreMetadata) {
-          genreMetadata[genre].total += dataMonths[month].genres[genre].total;
+      for (var monthGenre in dataMonths[month].genres) {
+        if (monthGenre in genreMetadata) {
+          genreMetadata[monthGenre].total +=
+            dataMonths[month].genres[monthGenre].total;
         } else {
-          genreMetadata[genre] = {};
-          genreMetadata[genre].total = dataMonths[month].genres[genre].total;
-          genreMetadata[genre].color = _colors[colorIndex];
-          genreMetadata[genre].order = colorIndex;  // make new variable?
-          genreMetadata[genre].cursorX = 0;
-          genreMetadata[genre].cursorY = 0;
+          genreMetadata[monthGenre] = {
+            total: dataMonths[month].genres[monthGenre].total,
+            color: _colors[colorIndex],
+            order: colorIndex,  // make new variable?
+            cursorX: 0,
+            cursorY: 0
+          };
           colorIndex++;
         }
       }
@@ -112,25 +132,25 @@ var vizify = (function($) {
       return genreMetadata[a].order - genreMetadata[b].order;
     });
 
-    // Sort from largest to smallest
-    sortedGenres = Object.keys(genreMetadata).sort(function(a, b) {
-      return -(genreMetadata[a].total - genreMetadata[b].total);
-    });
-
-    for (var i = 0, cursorY = topPaddingY + arcRadius; i < sortedGenres.length; i++) {
+    for (i = 0, cursorY = topPaddingY + arcRadius; i < sortedGenres.length; i++) {
       genre = genreMetadata[sortedGenres[i]];
       genre.cursorY = cursorY;
       cursorY += genre.total * lineWidth *
         (3 * _ctx.canvas.height / (4 * lineWidth * dataTotal * 2));
     }
 
-    for (var i = 0, cursorX = btmPaddingX; i < sortedGenres.length; i++) {
+    // Sort from largest to smallest
+    sortedGenres = Object.keys(genreMetadata).sort(function(a, b) {
+      return -(genreMetadata[a].total - genreMetadata[b].total);
+    });
+
+    for (i = 0, cursorX = btmPaddingX; i < sortedGenres.length; i++) {
       genre = genreMetadata[sortedGenres[i]];
       genre.cursorX = cursorX;
       cursorX += genre.total * lineWidth;
     }
 
-    for (var i = 0, cursorX = 0, cursorY = 0; i < sortedMonths.length; i++) {
+    for (i = 0, cursorX = 0, cursorY = 0; i < sortedMonths.length; i++) {
       month = sortedMonths[i];
       monthTotal = dataMonths[month].total;
       monthGenres = dataMonths[month].genres;

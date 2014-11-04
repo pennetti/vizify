@@ -2,9 +2,12 @@
 <html>
   <head>
     <title>Vizify</title>
-    <link rel='stylesheet' href='https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css'>
-    <link type='text/css' href='styles.css' rel='stylesheet' />
-    <style type='text/css'>
+    <link type="text/css" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css" rel="stylesheet" />
+    <link type="text/css" href="styles.css" rel="stylesheet" />
+    <style type="text/css">
+      body {
+        padding-top: 70px;  /*for the nav-bar*/
+      }
       #login, #loggedin {
         display: none;
       }
@@ -13,45 +16,57 @@
         text-align: center;
       }
       #vizifyCanvas {
-        padding-top: 50px;
+        /*padding-top: 50px;*/
         /*padding-left: 50px;*/
       }
     </style>
   </head>
   <body>
-    <div class='container'>
-      <div id='login'>
+    <div class="container">
+      <div id="login">
         <!-- TODO: put in cool log in page -->
         <h1> Log in to get started. </h1>
-        <a href='/login' class='btn btn-primary'> Log in with Spotify </a>
+        <a href="/login" class="btn btn-primary"> Log in with Spotify </a>
       </div>
     </div>
-    <div id='loggedin'>
-      <div class='navbar navbar-default navbar-fixed-top' role='navigation'>
-        <div class='container'>
-          <div class='navbar-header'>
-            <a class='navbar-brand' href='#'><span>&nbsp;Vizify&nbsp;</span></a>
+    <div id="loggedin" class="container">
+      <!-- Add the class "navbar-fixed-top" to have persistent navbar -->
+      <div class="navbar navbar-default navbar-fixed-top" role="navigation">
+        <div class="container">
+          <div class="navbar-header">
+            <a class="navbar-brand" href="#"><span>Vizify</span></a>
           </div>
         </div>
       </div>
-<!--       <div id='hero' class='hero-unit'>
-        <div class='container'>
-          <h1> Vizify </h1>
-          <p class='lead'> Visualize your Spotify collection. </p>
-          <button class='btn btn-info btn-large' id='vizify' type='button'>
-             Go
-          </button>
-          <div id='info'></div>
+      <div class="progress">
+        <div id="userLibraryProgressBar" class="progress-bar" role="progressbar"
+          aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"
+          style="width: 0%;">
+          <!-- <span class="sr-only">0% Complete</span> -->
         </div>
-      </div> -->
+      </div>
+      <div class="progress">
+        <div id="userStarredPlaylistProgressBar" class="progress-bar"
+          role="progressbar" aria-valuenow="0" aria-valuemin="0"
+          aria-valuemax="100" style="width: 0%;">
+          <!-- <span class="sr-only">0% Complete</span> -->
+        </div>
+      </div>
+      <div class="progress">
+        <div id="genreDataProgressBar" class="progress-bar" role="progressbar"
+          aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"
+          style="width: 0%;">
+          <!-- <span class="sr-only">0% Complete</span> -->
+        </div>
+      </div>
     </div>
 
-    <canvas id='vizifyCanvas' width='2400' height='2400'></canvas>
+    <canvas id="vizifyCanvas" width="2400" height="2400"></canvas>
 
-    <script src='http://code.jquery.com/jquery-1.10.1.min.js'></script>
-    <script src='/js/spotify.js'></script>
-    <script src='/js/vizify_data.js'></script>
-    <script src='/js/vizify.js'></script>
+    <script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
+    <script src="/js/spotify.js"></script>
+    <script src="/js/vizify_data.js"></script>
+    <script src="/js/vizify.js"></script>
     <script>
       (function() {
         // TODO: make a dynamic animation (i.e. update the model each time new
