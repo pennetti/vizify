@@ -5,7 +5,7 @@ var spotifyApi = (function($) {
 
   /**
    * Obtains parameters from the hash of the URL
-   * @return {Object} parameters in object form
+   * @return {object} parameters in object form
    */
   function getHashParams() {
     var params,
@@ -21,7 +21,7 @@ var spotifyApi = (function($) {
   }
 
   /**
-   * Spotify Web API construc
+   * @constructor
    */
   var _spotifyApi = function() {
     _access_token = getHashParams().access_token;
@@ -29,10 +29,10 @@ var spotifyApi = (function($) {
 
   /**
    * Make an ajax call to the Spotify Web API
-   * @param  {url} Spotify Web API URL
-   * @param  {data} data to send in the api call
-   * @param  {callback} callback function for api call
-   * @return {promise} ajax promise
+   * @param  {string} spotify web api uri string
+   * @param  {object} data object to send in the api call
+   * @param  {function} callback function for api call
+   * @return {promise} promise resolved on completion of api call
    */
   function callSpotifyWebApi(uri, data, callback) {
     return $.ajax({
@@ -61,8 +61,8 @@ var spotifyApi = (function($) {
 
   /**
    * Get tracks in the user collection
-   * @param  {offset} index of first object to return
-   * @param  {limit} number of tracks to return, max 50
+   * @param  {number} index of first object to return
+   * @param  {number} number of tracks to return, max 50
    * @return {promise} ajax promise
    */
   _spotifyApi.prototype.getUserTracks = function(offset, limit, callback) {
@@ -72,9 +72,9 @@ var spotifyApi = (function($) {
 
   /**
    * Get starred playlist for current user (if public)
-   * @param  {offset} index of first object to return
-   * @param  {limit} number of tracks to return, max 100
-   * @param  {id} user id to use when looking up starred playlist
+   * @param  {number} index of first object to return
+   * @param  {number} number of tracks to return, max 100
+   * @param  {string} user id to use when looking up starred playlist
    * @return {promise} ajax promise
    */
   _spotifyApi.prototype
@@ -87,7 +87,7 @@ var spotifyApi = (function($) {
 
   /**
    * Get the artist object that corresponds to the ID
-   * @param  {id} artist ID
+   * @param  {string} artist ID
    * @return {promise} ajax promise
    */
   _spotifyApi.prototype.getArtistById = function(id, callback) {

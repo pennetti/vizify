@@ -3,42 +3,21 @@ var vizify = (function($) {
   var _vd = new vizifyData(),
       _canvas = document.getElementById('vizifyCanvas'),
       _ctx = _canvas.getContext('2d'),
-      // 16 colors = 15 genre families + 1 misc. family
-      // http://flatuicolors.com/
-      // ['#1abc9c', '#2ecc71', '#3498db', '#9b59b6', '#34495e', '#16a085',
-      // '#27ae60', '#2980b9', '#8e44ad', '#2c3e50', '#f1c40f', '#e67e22',
-      // '#e74c3c', '#ecf0f1', '#95a5a6', '#f39c12', '#d35400', '#c0392b',
-      // '#bdc3c7', '#7f8c8d']
-      _colors = [
+      _colors = [ // http://flatuicolors.com/
         '#E74C3C', '#2ECC71', '#3498DB', '#E67E22', '#1ABC9C', '#9B59B6',
         '#F1C40F', '#27AE60', '#2980B9', '#C0392B', '#16A085', '#8E44AD',
         '#34495E', '#D35400', '#95A5A6', '#F39C12'];
 
-  var _vizify = function() {
-
-  };
-
-  // $(document).ready(function(){
-
-  //   var progress = setInterval(function() {
-  //   var $bar = $('.bar');
-
-  //   if ($bar.width() === 400) {
-  //     clearInterval(progress);
-  //     $('.progress').removeClass('active');
-  //   } else {
-  //     $bar.width($bar.width() + 40);
-  //   }
-
-  //     $bar.text($bar.width() / 4 + "%");
-  //   }, 800);
-
-  // });
+  /**
+   * Constructor
+   */
+  var _vizify = function() {};
 
   /**
-   *
+   * @return {promise} resolved when visualization is drawn
    */
   _vizify.prototype.getVisualization = function() {
+  // TODO: don't need to get data object every time screen is redrawn
 
     var deferred = $.Deferred();
 
@@ -139,7 +118,7 @@ var vizify = (function($) {
         (3 * _ctx.canvas.height / (4 * lineWidth * dataTotal * 2));
     }
 
-    // Sort from largest to smallest
+    // Sort from largest to smallest genre total
     sortedGenres = Object.keys(genreMetadata).sort(function(a, b) {
       return -(genreMetadata[a].total - genreMetadata[b].total);
     });
@@ -157,6 +136,11 @@ var vizify = (function($) {
       sortedMonthGenres = Object.keys(monthGenres).sort(function(a, b) {
         return -(monthGenres[a].total - monthGenres[b].total);
       });
+
+      // _ctx.font = '10px Verdana';
+      // _ctx.fillStyle = '#2c3e50';
+      // console.log(month, cursorX, cursorY+50);
+      // _ctx.fillText(month, cursorX, cursorY+10);
 
       for (var j = 0; j < sortedMonthGenres.length; j++) {
         genre = sortedMonthGenres[j];
@@ -181,7 +165,6 @@ var vizify = (function($) {
           originX + cursorX + ((genreData.cursorX - cursorX) / 2),
           originY + genreData.cursorY,
           arcRadius);
-        // console.log(cursorX, genreData.cursorX);
         _ctx.lineTo(
           originX + genreData.cursorX,
           originY + genreData.cursorY);

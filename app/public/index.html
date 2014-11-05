@@ -2,7 +2,8 @@
 <html>
   <head>
     <title>Vizify</title>
-    <link type="text/css" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css" rel="stylesheet" />
+    <link type="text/css" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css" rel="stylesheet" />
+    <link type="text/css" href="//maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css" rel="stylesheet">
     <link type="text/css" href="styles.css" rel="stylesheet" />
     <style type="text/css">
       body {
@@ -17,20 +18,26 @@
       }
       #vizifyCanvas {
         /*padding-top: 50px;*/
-        /*padding-left: 50px;*/
+        /*padding-left: 10px;*/
+      }
+      .progress-bar-custom {
+        background: rgba(52, 152, 219, 0.9);
       }
     </style>
   </head>
   <body>
-    <div class="container">
-      <div id="login">
-        <!-- TODO: put in cool log in page -->
-        <h1> Log in to get started. </h1>
-        <a href="/login" class="btn btn-primary"> Log in with Spotify </a>
-      </div>
+
+    <!-- LOGIN -->
+    <!-- TODO: put in cool login page -->
+    <div id="login" class="container">
+      <h1>Log in to get started.</h1>
+      <a href="/login" class="btn btn-primary">Log in with Spotify</a>
     </div>
+
+    <!-- LOGGED IN -->
     <div id="loggedin" class="container">
-      <!-- Add the class "navbar-fixed-top" to have persistent navbar -->
+
+      <!-- NAVBAR -->
       <div class="navbar navbar-default navbar-fixed-top" role="navigation">
         <div class="container">
           <div class="navbar-header">
@@ -38,25 +45,31 @@
           </div>
         </div>
       </div>
+
+      <!-- USER LIBRARY PROGRESS BAR -->
       <div class="progress">
-        <div id="userLibraryProgressBar" class="progress-bar" role="progressbar"
+        <div id="userLibraryProgressBar"
+          class="progress-bar progress-bar-custom" role="progressbar"
           aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"
           style="width: 0%;">
-          <!-- <span class="sr-only">0% Complete</span> -->
         </div>
       </div>
+
+      <!-- USER STARRED PLAYLIST PROGRESS BAR -->
       <div class="progress">
-        <div id="userStarredPlaylistProgressBar" class="progress-bar"
+        <div id="userStarredPlaylistProgressBar"
+          class="progress-bar progress-bar-custom"
           role="progressbar" aria-valuenow="0" aria-valuemin="0"
           aria-valuemax="100" style="width: 0%;">
-          <!-- <span class="sr-only">0% Complete</span> -->
         </div>
       </div>
+
+      <!-- GENRE DATA PROGRESS BAR -->
       <div class="progress">
-        <div id="genreDataProgressBar" class="progress-bar" role="progressbar"
+        <div id="genreDataProgressBar"
+          class="progress-bar progress-bar-custom" role="progressbar"
           aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"
           style="width: 0%;">
-          <!-- <span class="sr-only">0% Complete</span> -->
         </div>
       </div>
     </div>
@@ -74,7 +87,7 @@
 
         /**
          * Obtains parameters from the hash of the URL
-         * @return Object
+         * @return {object} Object
          */
         function getHashParams() {
           var params,
@@ -113,8 +126,6 @@
         window.addEventListener('resize', function() {
           _vizify.getVisualization();
         }, true);
-        // document.getElementById('vizify').addEventListener('click', function() {
-        // });
 
       })();
     </script>
