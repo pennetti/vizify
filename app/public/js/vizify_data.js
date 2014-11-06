@@ -188,7 +188,8 @@ var vizifyData = (function($) {
         processUserStarredPlaylist(tracks, offset, userId, deferred);
       });
     } else {
-      deferred.resolve();    }
+      deferred.resolve();
+    }
   }
 
   /**
@@ -237,7 +238,7 @@ var vizifyData = (function($) {
    */
   function getMonths() {
     /**
-     *
+     * @example
      * {
      *   "2013-01": [
      *     "TRACK_ID_1",
@@ -269,7 +270,7 @@ var vizifyData = (function($) {
    */
   function getArtists() {
     /**
-     *
+     * @example
      * {
      *   "ARTIST_ID_1": {
      *     "genres": [
@@ -330,7 +331,7 @@ var vizifyData = (function($) {
    */
   function getGenres() {
     /**
-     *
+     * @example
      * {
      *   "album rock": {
      *     "artists": [
@@ -382,7 +383,7 @@ var vizifyData = (function($) {
   function buildDataObject(deferred) {
   // TODO: clean up, use object notation rather than dot
     /**
-     *
+     * @example
      * {
      *   "months": {
      *     "2013-01": {
@@ -491,7 +492,7 @@ var vizifyData = (function($) {
    */
   function getGenreFamilies() {
     /**
-     *
+     * @example
      * {
      *   "indie pop": {
      *     "family": "pop"

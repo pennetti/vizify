@@ -1,6 +1,27 @@
 var vizify = (function($) {
 
+  // TODO: move to util module to keep DRY
+  /**
+   * Store a JSON object in local storage
+   * @param {key} local storage object key
+   * @param {value} JSON object
+   */
+  Storage.prototype.setObject = function(key, value) {
+    this.setItem(key, JSON.stringify(value));
+  };
+
+  /**
+   * Retrieve a JSON object from local storage
+   * @param {string} key of local storage object to return
+   * @return {object} JSON object value stored at given key
+   */
+  Storage.prototype.getObject = function(key) {
+    var value = this.getItem(key);
+    return value && JSON.parse(value);
+  };
+
   var _vd = new vizifyData(),
+      _data = null,
       _canvas = document.getElementById('vizifyCanvas'),
       _ctx = _canvas.getContext('2d'),
       _colors = [ // http://flatuicolors.com/
@@ -9,11 +30,12 @@ var vizify = (function($) {
         '#34495E', '#D35400', '#95A5A6', '#F39C12'];
 
   /**
-   * Constructor
+   * @constructor
    */
   var _vizify = function() {};
 
   /**
+   *
    * @return {promise} resolved when visualization is drawn
    */
   _vizify.prototype.getVisualization = function() {
@@ -21,14 +43,25 @@ var vizify = (function($) {
 
     var deferred = $.Deferred();
 
-    _vd.getDataObject().then(function(data) {
-      draw(data);
+    if (localStorage.getItem('_data')) {
+      _data = localStorage.getObject('_data');
+      draw(_data);
       deferred.resolve();
-    });
+    } else {
+      _vd.getDataObject().then(function(data) {
+        _data = data;
+        localStorage.setObject('_data', _data);
+        draw(_data);
+        deferred.resolve();
+      });
+    }
 
     return deferred.promise();
   };
 
+  /**
+   * @param {object}
+   */
   function draw(data) {
 
     // dynamic resizing
@@ -50,12 +83,14 @@ var vizify = (function($) {
         sortedGenres = null,
         sortedMonthGenres = null,
 
-        // vizWidth = _canvas.width,
-        // vizHeight = _canvas.height,
-        i = 0,
-
         originX = 0,
-        originY = 0,
+        originY = _ctx.canvas.height / 10,
+        vizWidth = _ctx.canvas.width - originX,
+        vizHeight = _ctx.canvas.height - originY,
+
+        i = 0,
+        j = 0,
+
         currentMonthX = null,
         currentMonthY = null,
         currentGenreX = null,
@@ -72,22 +107,26 @@ var vizify = (function($) {
         btmPaddingY = 0,
 
         colorIndex = 0,
+        // TODO: normalize font size
+        fontSize = null,
         genreMetadata = {};
 
     dataTotal = data.total;
     dataMonths = data.months;
     sortedMonths = Object.keys(dataMonths).sort();
 
+    // TODO: clean this up
     arcRadius = 0;
-    lineWidth = (_ctx.canvas.width * 0.75) / (2 * dataTotal);
-    topPaddingX = (_ctx.canvas.width * 0.3) / (sortedMonths.length - 1);
-    topPaddingY = _ctx.canvas.height / 8;
-    btmPaddingX = (_ctx.canvas.width * 0.3) * 0.5;
-    btmPaddingY = (7 * _ctx.canvas.height) / 8;
+    lineWidth = vizWidth * 0.75 / (2 * dataTotal);
+    topPaddingX = vizWidth * 0.3 / (sortedMonths.length - 1);
+    topPaddingY = 3 * vizHeight / 10;
+    btmPaddingX = vizWidth * 0.3 * 0.5;
+    btmPaddingY = 7 * vizHeight / 10;
 
     // Get genre metadata
     for (i = 0; i < sortedMonths.length; i++) {
       month = sortedMonths[i];
+
       for (var monthGenre in dataMonths[month].genres) {
         if (monthGenre in genreMetadata) {
           genreMetadata[monthGenre].total +=
@@ -95,12 +134,11 @@ var vizify = (function($) {
         } else {
           genreMetadata[monthGenre] = {
             total: dataMonths[month].genres[monthGenre].total,
-            color: _colors[colorIndex],
-            order: colorIndex,  // make new variable?
+            order: colorIndex,
+            color: _colors[colorIndex++],
             cursorX: 0,
             cursorY: 0
           };
-          colorIndex++;
         }
       }
     }
@@ -111,12 +149,13 @@ var vizify = (function($) {
       return genreMetadata[a].order - genreMetadata[b].order;
     });
 
-    for (i = 0, cursorY = topPaddingY + arcRadius; i < sortedGenres.length; i++) {
-      genre = genreMetadata[sortedGenres[i]];
-      genre.cursorY = cursorY;
-      cursorY += genre.total * lineWidth *
-        (3 * _ctx.canvas.height / (4 * lineWidth * dataTotal * 2));
-    }
+    for (i = 0, cursorY = topPaddingY + arcRadius; i < sortedGenres.length;
+      i++) {
+        genre = genreMetadata[sortedGenres[i]];
+        genre.cursorY = cursorY;
+        cursorY += genre.total * lineWidth *
+          (2 * vizHeight / (5 * lineWidth * dataTotal * 2));
+      }
 
     // Sort from largest to smallest genre total
     sortedGenres = Object.keys(genreMetadata).sort(function(a, b) {
@@ -126,6 +165,12 @@ var vizify = (function($) {
     for (i = 0, cursorX = btmPaddingX; i < sortedGenres.length; i++) {
       genre = genreMetadata[sortedGenres[i]];
       genre.cursorX = cursorX;
+      _ctx.save();
+      _ctx.font = '10px Verdana';  // font should scale
+      _ctx.fillStyle = '#2c3e50';
+      _ctx.rotate(Math.PI / 2);
+      _ctx.fillText(sortedGenres[i], vizHeight, -cursorX);
+      _ctx.restore();
       cursorX += genre.total * lineWidth;
     }
 
@@ -137,24 +182,25 @@ var vizify = (function($) {
         return -(monthGenres[a].total - monthGenres[b].total);
       });
 
-      // _ctx.font = '10px Verdana';
-      // _ctx.fillStyle = '#2c3e50';
-      // console.log(month, cursorX, cursorY+50);
-      // _ctx.fillText(month, cursorX, cursorY+10);
+      _ctx.save();
+      _ctx.font = '10px Verdana';  // font should scale
+      _ctx.fillStyle = '#2c3e50';
+      _ctx.rotate(Math.PI / 2);
+      _ctx.fillText(month, 0, -cursorX);
+      _ctx.restore();
 
-      for (var j = 0; j < sortedMonthGenres.length; j++) {
+      for (j = 0; j < sortedMonthGenres.length; j++) {
         genre = sortedMonthGenres[j];
         genreData = genreMetadata[genre];
         genreTotal = monthGenres[genre].total;
         genreLineWidth = lineWidth * genreTotal;
         genreSubgenres = monthGenres[genre].subgenres;
 
-        _ctx.beginPath();
-
         cursorX += genreLineWidth * 0.5;
         genreData.cursorX += genreLineWidth * 0.5;
-        genreData.cursorY += genreLineWidth * 0.1;
+        genreData.cursorY += genreLineWidth * 0.1; // could be normalized
 
+        _ctx.beginPath();
         _ctx.moveTo(originX + cursorX, originY + cursorY);
 
         _ctx.lineTo(originX + cursorX, topPaddingY);
@@ -172,9 +218,9 @@ var vizify = (function($) {
           originX + genreData.cursorX,
           originY + genreData.cursorY,
           originX + genreData.cursorX,
-          originY + genreData.cursorY + arcRadius,
+          originY + btmPaddingY,
           arcRadius);
-        _ctx.lineTo(originX + genreData.cursorX, _ctx.canvas.height);
+        _ctx.lineTo(originX + genreData.cursorX, 9 * vizHeight / 10);
 
         _ctx.globalAlpha = 0.9;
         _ctx.lineWidth = genreLineWidth;
