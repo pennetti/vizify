@@ -32,9 +32,9 @@ var vizifyData = (function($) {
 
   var _sp = new spotifyApi(),
       _months = {},
-      _tracks = { total: 0 }, // track -> artist
-      _artists = { total: 0 }, // artist -> subgenre
-      _genres = { total: 0 }, // subgenre -> genre
+      _tracks = { total: 0 },   // track -> artist
+      _artists = { total: 0 },  // artist -> subgenre
+      _genres = { total: 0 },   // subgenre -> genre
       _genreFamilies = { total: 0 },
       _data = { months: {}, total: 0 };
 
@@ -78,12 +78,10 @@ var vizifyData = (function($) {
         getUserStarredPlaylist().then(function() {
           localStorage.setObject('_tracks', _tracks);
           deferred.resolve(_tracks);
-        })
-        .progress(function(percentComplete) {
+        }).progress(function(percentComplete) {
           progressBar('userStarredPlaylistProgressBar', percentComplete);
         });
-      })
-      .progress(function(percentComplete) {
+      }).progress(function(percentComplete) {
         progressBar('userLibraryProgressBar', percentComplete);
       });
     }
@@ -133,7 +131,6 @@ var vizifyData = (function($) {
       });
     } else {
       deferred.resolve();
-      return;
     }
   }
 
@@ -224,8 +221,7 @@ var vizifyData = (function($) {
         localStorage.setObject('_genres', _genres);
         localStorage.setObject('_artists', _artists);
         deferred.resolve();
-      })
-      .progress(function(percentComplete) {
+      }).progress(function(percentComplete) {
         progressBar('genreDataProgressBar', percentComplete);
       });
     }
@@ -234,22 +230,21 @@ var vizifyData = (function($) {
   }
 
   /**
+   * @example
+   * {
+   *   "2013-01": [
+   *     "TRACK_ID_1",
+   *     "TRACK_ID_2",
+   *     "TRACK_ID_3"
+   *   ],
+   *   "2013-02": [],
+   *   "2013-03": [],
+   *   "total": 0
+   * }
    *
    */
   function getMonths() {
-    /**
-     * @example
-     * {
-     *   "2013-01": [
-     *     "TRACK_ID_1",
-     *     "TRACK_ID_2",
-     *     "TRACK_ID_3"
-     *   ],
-     *   "2013-02": [],
-     *   "2013-03": [],
-     *   "total": 0
-     * }
-     */
+
     var month = null;
 
     for (var trackId in _tracks) {
@@ -267,24 +262,23 @@ var vizifyData = (function($) {
 
   /**
    *
+   * @example
+   * {
+   *   "ARTIST_ID_1": {
+   *     "genres": [
+   *       "rock",
+   *       "alternative rock",
+   *       "classic rock"
+   *     ],
+   *     "total": 0
+   *   },
+   *   "ARTIST_ID_1": {},
+   *   "ARTIST_ID_1": {},
+   *   "total": 0
+   * }
    */
   function getArtists() {
-    /**
-     * @example
-     * {
-     *   "ARTIST_ID_1": {
-     *     "genres": [
-     *       "rock",
-     *       "alternative rock",
-     *       "classic rock"
-     *     ],
-     *     "total": 0
-     *   },
-     *   "ARTIST_ID_1": {},
-     *   "ARTIST_ID_1": {},
-     *   "total": 0
-     * }
-     */
+
     var artists = {},
         progress = 0,
         promises = [],
@@ -293,7 +287,6 @@ var vizifyData = (function($) {
         deferred = $.Deferred();
 
     for (var trackId in _tracks) {
-
       if (trackId === 'total') { continue; }
 
       for (var i = 0; i < _tracks[trackId].artists.length; i++) {
@@ -306,13 +299,11 @@ var vizifyData = (function($) {
           _artists[artistId].total++;
         } else {
           _artists.total++;
-          _artists[artistId] = {};
-          _artists[artistId].total = 1;
+          _artists[artistId] = { total: 1 };
           promises.push(_sp.getArtistById(artistId, function() {
             progress++;
             deferred.notify(Math.round(progress / progressTotal * 100));
-          })
-          .then(function(artist) {
+          }).then(function(artist) {
             _artists[artist.id].genres = artist.genres;
           }));
         }
@@ -328,27 +319,26 @@ var vizifyData = (function($) {
 
   /**
    *
+   * @example
+   * {
+   *   "album rock": {
+   *     "artists": [
+   *       "ARTIST_ID_1",
+   *       "ARTIST_ID_2",
+   *       "ARTIST_ID_3"
+   *     ],
+   *     "family": [
+   *       "rock"
+   *     ],
+   *     "total": 3
+   *   },
+   *   "alternative dance": {},
+   *   "alternative hip hop": {},
+   *   "total": 100
+   * }
    */
   function getGenres() {
-    /**
-     * @example
-     * {
-     *   "album rock": {
-     *     "artists": [
-     *       "ARTIST_ID_1",
-     *       "ARTIST_ID_2",
-     *       "ARTIST_ID_3"
-     *     ],
-     *     "family": [
-     *       "rock"
-     *     ],
-     *     "total": 3
-     *   },
-     *   "alternative dance": {},
-     *   "alternative hip hop": {},
-     *   "total": 100
-     * }
-     */
+
     var genre = null,
         genres = {};
 
@@ -378,47 +368,47 @@ var vizifyData = (function($) {
   }
 
   /**
-   *
+   * @param {deferred}
+   * @example
+   * {
+   *   "months": {
+   *     "2013-01": {
+   *       "genres": {
+   *         "rock": {
+   *           "subgenres": {
+   *             "classic rock": {
+   *               "artists": [
+   *                 "ARTIST_ID_1",
+   *                 "ARTIST_ID_2",
+   *                 "ARTIST_ID_3"
+   *               ],
+   *               "total": 20 // total tracks in subgenre
+   *             },
+   *             "soft rock": {},
+   *             "alternative rock": {}
+   *           },
+   *           "total": 75 // total tracks in genre
+   *         },
+   *         "pop": {},
+   *         "ska": {}
+   *       },
+   *       "total": 200 // total tracks in month
+   *     },
+   *     "2013-02": {},
+   *     "2013-03": {}
+   *   },
+   *   "total": 10000 // total tracks in collection
+   * }
    */
   function buildDataObject(deferred) {
-  // TODO: clean up, use object notation rather than dot
-    /**
-     * @example
-     * {
-     *   "months": {
-     *     "2013-01": {
-     *       "genres": {
-     *         "rock": {
-     *           "subgenres": {
-     *             "classic rock": {
-     *               "artists": [
-     *                 "ARTIST_ID_1",
-     *                 "ARTIST_ID_2",
-     *                 "ARTIST_ID_3"
-     *               ],
-     *               "total": 20 // total tracks in subgenre
-     *             },
-     *             "soft rock": {},
-     *             "alternative rock": {}
-     *           },
-     *           "total": 75 // total tracks in genre
-     *         },
-     *         "pop": {},
-     *         "ska": {}
-     *       },
-     *       "total": 200 // total tracks in month
-     *     },
-     *     "2013-02": {},
-     *     "2013-03": {}
-     *   },
-     *   "total": 10000 // total tracks in collection
-     * }
-     */
+    // TODO: clean up, use object notation rather than dot
     var genre = null,
         genres = null,
         subgenre = null,
         subgenres = null,
         trackIds = null,
+        artist = null,
+        artists = null,
         progress = 0;
 
     _data.total = _tracks.total;
@@ -427,9 +417,9 @@ var vizifyData = (function($) {
     for (var month in _months) {
       if (month === 'total') { continue; }
 
+      trackIds = _months[month];
       deferred.notify(Math.round(progress / _data.total * 100));
 
-      trackIds = _months[month];
       progress += trackIds.length;
       _data.months[month] = {
         total: trackIds.length,
@@ -437,19 +427,17 @@ var vizifyData = (function($) {
       };
 
       for (var i = 0; i < trackIds.length; i++) {
-        for (var j = 0; j < _tracks[trackIds[i]].artists.length; j++) {
-          if (_artists[_tracks[trackIds[i]].artists[j]] === undefined) {
-            continue;
-          }
+        artists = _tracks[trackIds[i]].artists;
 
-          for (var k = 0; k < _artists[_tracks[trackIds[i]].artists[j]].genres
-            .length; k++) {
+        for (var j = 0; j < artists.length; j++) {
+          if (_artists[artists[j]] === undefined) { continue; }
+          artist = _artists[artists[j]];
+
+          for (var k = 0; k < artist.genres.length; k++) {
             for (var m = 0; m < _genres[_artists[_tracks[trackIds[i]]
               .artists[j]].genres[k]].family.length; m++) {
-
-                genre = _genres[_artists[_tracks[trackIds[i]].artists[j]]
-                  .genres[k]].family[m];
-                subgenre = _artists[_tracks[trackIds[i]].artists[j]].genres[k];
+                genre = _genres[artist.genres[k]].family[m];
+                subgenre = artist.genres[k];
 
                 if (genre in _data.months[month].genres) {
                   genres = _data.months[month].genres;
@@ -460,15 +448,14 @@ var vizifyData = (function($) {
                   if (subgenre in subgenres) {
                     subgenres[subgenre].total++;
 
-                    if (subgenres[subgenre].artists.indexOf(
-                        _tracks[trackIds[i]].artists[j]) === -1) {
-                        subgenres[subgenre].artists.push(
-                          _tracks[trackIds[i]].artists[j]);
+                    if (subgenres[subgenre].artists
+                      .indexOf(artists[j]) === -1) {
+                        subgenres[subgenre].artists.push(artists[j]);
                       }
                   } else {
                     subgenres[subgenre] = {
                       total: 1,
-                      artists: [_tracks[trackIds[i]].artists[j]]
+                      artists: [artists[j]]
                     };
                   }
                 } else {
@@ -476,7 +463,7 @@ var vizifyData = (function($) {
                   _data.months[month].genres[genre].subgenres = {
                     subgenre: {
                       total: 1,
-                      artists: [_tracks[trackIds[i]].artists[j]]
+                      artists: [artists[j]]
                     }
                   };
                 }
@@ -489,18 +476,16 @@ var vizifyData = (function($) {
 
   /**
    *
+   * @example
+   * {
+   *   "indie pop": {
+   *     "family": "pop"
+   *   },
+   *   "indietronica": {},
+   *   "indie rock": {},
+   * }
    */
   function getGenreFamilies() {
-    /**
-     * @example
-     * {
-     *   "indie pop": {
-     *     "family": "pop"
-     *   },
-     *   "indietronica": {},
-     *   "indie rock": {},
-     * }
-     */
     $.getJSON('/js/genre_families.json', function(genres) {
       for (var i = 0; i < genres.length; i++) {
         _genreFamilies[genres[i].name] = {
@@ -530,8 +515,8 @@ var vizifyData = (function($) {
   function progressBar(progressBarId, percentComplete) {
     $('#' + progressBarId)
       .css('width', percentComplete + '%')
-      .attr('aria-valuenow', percentComplete)
-      .text(percentComplete + '%');
+      .attr('aria-valuenow', percentComplete);
+      // .text(percentComplete + '%');
   }
 
   return _vizifyData;

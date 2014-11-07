@@ -27,7 +27,10 @@ var vizify = (function($) {
       _colors = [ // http://flatuicolors.com/
         '#E74C3C', '#2ECC71', '#3498DB', '#E67E22', '#1ABC9C', '#9B59B6',
         '#F1C40F', '#27AE60', '#2980B9', '#C0392B', '#16A085', '#8E44AD',
-        '#34495E', '#D35400', '#95A5A6', '#F39C12'];
+        '#34495E', '#D35400', '#95A5A6', '#F39C12'],
+      _monthNames = [
+        'January', 'February', 'March', 'April', 'May', 'June', 'July',
+        'August', 'September', 'October', 'November', 'December'];
 
   /**
    * @constructor
@@ -77,6 +80,7 @@ var vizify = (function($) {
         subgenreTotal = null,
         subgenreArtists = null,
 
+        year = 0,
         month = null,
         sortedMonths = null,
         genre = null,
@@ -119,7 +123,7 @@ var vizify = (function($) {
     arcRadius = 0;
     lineWidth = vizWidth * 0.75 / (2 * dataTotal);
     topPaddingX = vizWidth * 0.3 / (sortedMonths.length - 1);
-    topPaddingY = 3 * vizHeight / 10;
+    topPaddingY = 2.5 * vizHeight / 10;
     btmPaddingX = vizWidth * 0.3 * 0.5;
     btmPaddingY = 7 * vizHeight / 10;
 
@@ -165,13 +169,14 @@ var vizify = (function($) {
     for (i = 0, cursorX = btmPaddingX; i < sortedGenres.length; i++) {
       genre = genreMetadata[sortedGenres[i]];
       genre.cursorX = cursorX;
+      cursorX += genre.total * lineWidth;
+
       _ctx.save();
       _ctx.font = '10px Verdana';  // font should scale
       _ctx.fillStyle = '#2c3e50';
       _ctx.rotate(Math.PI / 2);
-      _ctx.fillText(sortedGenres[i], vizHeight, -cursorX);
+      _ctx.fillText(sortedGenres[i], vizHeight, -genre.cursorX);
       _ctx.restore();
-      cursorX += genre.total * lineWidth;
     }
 
     for (i = 0, cursorX = 0, cursorY = 0; i < sortedMonths.length; i++) {
@@ -185,8 +190,14 @@ var vizify = (function($) {
       _ctx.save();
       _ctx.font = '10px Verdana';  // font should scale
       _ctx.fillStyle = '#2c3e50';
+      if (parseInt(month.substring(0, 4), 10) > year) {
+        year = parseInt(month.substring(0, 4), 10);
+        _ctx.fillText(year, cursorX, 10);
+      }
       _ctx.rotate(Math.PI / 2);
-      _ctx.fillText(month, 0, -cursorX);
+      _ctx.fillText('      ' +
+        _monthNames[parseInt(month.substring(5, 7), 10)-1].substring(0, 1),
+        0, -cursorX);
       _ctx.restore();
 
       for (j = 0; j < sortedMonthGenres.length; j++) {
@@ -204,7 +215,6 @@ var vizify = (function($) {
         _ctx.moveTo(originX + cursorX, originY + cursorY);
 
         _ctx.lineTo(originX + cursorX, topPaddingY);
-        _ctx.lineTo(originX + cursorX, genreData.cursorY - arcRadius);
         _ctx.arcTo(
           originX + cursorX + ((genreData.cursorX - cursorX) / 4),
           originY + genreData.cursorY,
