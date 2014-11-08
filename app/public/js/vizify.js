@@ -196,7 +196,7 @@ var vizify = (function($) {
       }
       _ctx.rotate(Math.PI / 2);
       _ctx.fillText('      ' +
-        _monthNames[parseInt(month.substring(5, 7), 10)-1].substring(0, 1),
+        _monthNames[parseInt(month.substring(5, 7), 10) - 1].substring(0, 1),
         0, -cursorX);
       _ctx.restore();
 

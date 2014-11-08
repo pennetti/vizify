@@ -418,9 +418,9 @@ var vizifyData = (function($) {
       if (month === 'total') { continue; }
 
       trackIds = _months[month];
+      progress += trackIds.length;
       deferred.notify(Math.round(progress / _data.total * 100));
 
-      progress += trackIds.length;
       _data.months[month] = {
         total: trackIds.length,
         genres: {}
