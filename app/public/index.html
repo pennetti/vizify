@@ -12,14 +12,10 @@
       #login, #loggedin {
         display: none;
       }
-      #vizify {
-        width: 80px;
-        text-align: center;
-      }
       #vizifyCanvas {
         /*padding-top: 50px;*/
         /*padding-left: 10px;*/
-        float: center;
+        /*float: center;*/
       }
     </style>
   </head>
@@ -111,32 +107,25 @@
         var access_token = params.access_token,
             error = params.error;
 
+        if (Object.keys(params).length) {
+          if (error) {
+            alert('There was an error during the authentication');
+          } else if (access_token) {
 
-        if (error) {
-          console.log(error);
-          alert('There was an error during the authentication');
-        } else if (Object.keys(params).length) {
-          console.log(params, access_token);
-          if (access_token) {
+            var _vizify = new vizify();
+
+            _vizify.getVisualization();
+            window.addEventListener('resize', function() {
+              _vizify.draw();
+            }, true);
+
             $('#login').hide();
             $('#loggedin').show();
-          } else {
-            $('#login').show();
-            $('#loggedin').hide();
-          }
+          } else { /*not logged in*/ }
         } else {
-          console.log('not logged in');
           $('#login').show();
           $('#loggedin').hide();
         }
-
-        // TODO: add static variables http://stackoverflow.com/a/1535687/854645
-        var _vizify = new vizify();
-        _vizify.getVisualization();
-        // TODO: consider just drawing so it doesn't have to re-fetch data
-        window.addEventListener('resize', function() {
-          _vizify.getVisualization();
-        }, true);
 
       })(jQuery);
     </script>

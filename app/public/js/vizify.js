@@ -42,7 +42,6 @@ var vizify = (function($) {
    * @return {promise} resolved when visualization is drawn
    */
   _vizify.prototype.getVisualization = function() {
-  // TODO: don't need to get data object every time screen is redrawn
 
     var deferred = $.Deferred();
 
@@ -60,6 +59,13 @@ var vizify = (function($) {
     }
 
     return deferred.promise();
+  };
+
+  /**
+   *
+   */
+  _vizify.prototype.draw = function() {
+    draw(_data);
   };
 
   /**
