@@ -1,6 +1,7 @@
 var fs = require('fs'),
-    express = require('express'), // Express web server framework
-    request = require('request'), // "Request" library
+    secret = require('./secret'),
+    express = require('express'),
+    request = require('request'),
     querystring = require('querystring'),
     cookieParser = require('cookie-parser');
 
@@ -8,9 +9,9 @@ var fs = require('fs'),
     // genresJson = require('./genres.json');  // JSON.parse(genresJson)
     // Using 'require' on the json file so it is only loaded once
 
-var client_id = 'd7a061eff44a40f89b2cc19aec7e2bd4', // Your client id
+var client_id = secret.client_id, // Your client id
     redirect_uri = 'http://localhost:8888/callback', // Your redirect uri
-    client_secret = 'd99700cc77b140449953e5d51ed7e2b2'; // Your client secret
+    client_secret = secret.client_secret; // Your client secret
 
 var app = express();
 
