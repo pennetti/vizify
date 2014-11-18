@@ -37,15 +37,23 @@ var spotifyApi = (function($) {
   function callSpotifyWebApi(uri, data, callback) {
     return $.ajax({
       url: 'https://api.spotify.com/v1/' + uri,
+      type: 'get',
       dataType: 'json',
       data: data,
       headers: {
         'Authorization': 'Bearer ' + _access_token
       },
+      // statusCode: {
+      //   429: function(response) {
+      //     console.log('429', response);
+      //     console.log('429', response.getAllResponseHeaders());
+      //   }
+      // },
       success: function(response) {
         callback(response);
       },
-      error: function(response) {
+      error: function(response, status, request) {
+        // console.log(request.getResponseHeader('Retry-After'));
         callback(null);
       }
     });

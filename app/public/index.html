@@ -17,6 +17,14 @@
         /*padding-left: 10px;*/
         /*float: center;*/
       }
+      #vizifySvg div {
+        font: 10px sans-serif;
+        background-color: steelblue;
+        text-align: right;
+        padding: 3px;
+        margin: 1px;
+        color: white;
+      }
     </style>
   </head>
   <body>
@@ -73,10 +81,12 @@
         </div>
       </div>
 
-    <canvas id="vizifyCanvas" width="2400" height="2400"></canvas>
+      <canvas id="vizifyCanvas" width="2400" height="2400"></canvas>
+      <div id="vizifySvg"></div>
     </div>
 
     <script src="http://code.jquery.com/jquery-1.10.1.min.js"></script>
+    <script src="http://d3js.org/d3.v3.min.js" charset="utf-8"></script>
     <script src="/js/spotify.js"></script>
     <script src="/js/vizify_data.js"></script>
     <script src="/js/vizify.js"></script>

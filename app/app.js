@@ -15,7 +15,7 @@ var client_id = secret.client_id, // Your client id
 
 var app = express();
 
-var stateKey = 'spotify_auth_state';
+var state_key = 'spotify_auth_state';
 
 /**
  * Generates a random string containing numbers and letters
@@ -43,7 +43,7 @@ app.get('/login', function(req, res) {
       scope = 'user-read-private ' + 'user-read-email ' +
         'user-library-read ' + 'playlist-read-private';
 
-  res.cookie(stateKey, state);
+  res.cookie(state_key, state);
 
   res.redirect('https://accounts.spotify.com/authorize?' +
     querystring.stringify({
@@ -60,7 +60,7 @@ app.get('/callback', function(req, res) {
 
   var code = req.query.code || null,
       state = req.query.state || null,
-      storedState = req.cookies ? req.cookies[stateKey] : null;
+      storedState = req.cookies ? req.cookies[state_key] : null;
 
   if (state === null || state !== storedState) {
     res.redirect('/#' +
@@ -69,7 +69,7 @@ app.get('/callback', function(req, res) {
       })
     );
   } else {
-    res.clearCookie(stateKey);
+    res.clearCookie(state_key);
 
     var authOptions = {
       url: 'https://accounts.spotify.com/api/token',

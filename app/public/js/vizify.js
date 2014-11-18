@@ -1,4 +1,4 @@
-var vizify = (function($) {
+var vizify = (function($, svg) {
 
   // TODO: move to util module to keep DRY
   /**
@@ -48,6 +48,7 @@ var vizify = (function($) {
     if (localStorage.getItem('_data')) {
       _data = localStorage.getObject('_data');
       draw(_data);
+      drawSvg(_data);
       deferred.resolve();
     } else {
       _vd.getDataObject().then(function(data) {
@@ -66,6 +67,7 @@ var vizify = (function($) {
    */
   _vizify.prototype.draw = function() {
     draw(_data);
+    drawSvg(_data);
   };
 
   /**
@@ -74,7 +76,7 @@ var vizify = (function($) {
   function draw(data) {
 
     // dynamic resizing
-    _ctx.canvas.width = window.innerWidth;
+    _ctx.canvas.width = window.innerWidth - 100;
     _ctx.canvas.height = window.innerHeight;
 
     var dataTotal = null,
@@ -220,6 +222,10 @@ var vizify = (function($) {
         _ctx.beginPath();
         _ctx.moveTo(originX + cursorX, originY + cursorY);
 
+        _ctx.globalAlpha = 0.9;
+        _ctx.lineWidth = genreLineWidth;
+        _ctx.strokeStyle = genreData.color;
+
         _ctx.lineTo(originX + cursorX, topPaddingY);
         _ctx.arcTo(
           originX + cursorX + ((genreData.cursorX - cursorX) / 4),
@@ -238,9 +244,7 @@ var vizify = (function($) {
           arcRadius);
         _ctx.lineTo(originX + genreData.cursorX, 9 * vizHeight / 10);
 
-        _ctx.globalAlpha = 0.9;
-        _ctx.lineWidth = genreLineWidth;
-        _ctx.strokeStyle = genreData.color;
+
         _ctx.stroke();
 
         genreData.cursorX += genreLineWidth * 0.5;
@@ -257,5 +261,14 @@ var vizify = (function($) {
     }
   }
 
+  function drawSvg(data) {
+    svg.select('#vizifySvg')
+      .selectAll('div')
+      .data([1,2,3,4])
+      .enter().append('div')
+      .style('width', function(d) { return d * 10 + 'px'; })
+      .text(function(d) { return d; });;
+  }
+
   return _vizify;
-}(jQuery));
+}(jQuery, d3));

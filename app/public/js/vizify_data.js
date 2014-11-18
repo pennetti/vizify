@@ -303,9 +303,12 @@ var vizifyData = (function($) {
           promises.push(_sp.getArtistById(artistId, function() {
             progress++;
             deferred.notify(Math.round(progress / progressTotal * 100));
-          }).then(function(artist) {
+          }).done(function(artist) {
             _artists[artist.id].genres = artist.genres;
-          }));
+            })
+            .fail(function(error) {
+              console.log(error);
+            }));
         }
       }
     }
