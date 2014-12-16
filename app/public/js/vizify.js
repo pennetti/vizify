@@ -20,6 +20,11 @@ var vizify = (function($, svg) {
     return value && JSON.parse(value);
   };
 
+  var svgCanvas = svg.select('#vizifySvg')
+    .append('svg:svg')
+      .attr('width', window.innerWidth)
+      .attr('height', window.innerHeight);
+
   var _vd = new vizifyData(),
       _data = null,
       _canvas = document.getElementById('vizifyCanvas'),
@@ -55,6 +60,7 @@ var vizify = (function($, svg) {
         _data = data;
         localStorage.setObject('_data', _data);
         draw(_data);
+        drawSvg(_data);
         deferred.resolve();
       });
     }
@@ -226,6 +232,57 @@ var vizify = (function($, svg) {
         _ctx.lineWidth = genreLineWidth;
         _ctx.strokeStyle = genreData.color;
 
+        var path = [
+          { x: originX + cursorX, y: originY + cursorY },
+          { x: originX + cursorX, y: topPaddingY },
+          { x: originX + cursorX, y: topPaddingY },
+          {
+            x: (originX + cursorX + ((genreData.cursorX - cursorX) / 4)),
+            y: originY + genreData.cursorY
+          },
+          {
+            x: originX + cursorX + ((genreData.cursorX - cursorX) / 2),
+            y: originY + genreData.cursorY
+          },
+          { x: originX + genreData.cursorX, y: originY + genreData.cursorY },
+          // { x: originX + genreData.cursorX, y: originY + genreData.cursorY },
+          { x: originX + genreData.cursorX, y: originY + btmPaddingY },
+          { x: originX + genreData.cursorX, y: originY + btmPaddingY },
+          { x: originX + genreData.cursorX, y: 9 * vizHeight / 10 }
+        ];
+
+        var lineFunction = svg.svg.line()
+          .x(function(d) { return d.x; })
+          .y(function(d) { return d.y; })
+          .interpolate('basis');
+
+        var path = svgCanvas.append('path')
+          .style('opacity', 0.8)
+          .attr('d', lineFunction(path))
+          .attr('stroke', genreData.color)
+          .attr('stroke-width', genreLineWidth)
+          .attr('fill', 'none')
+          .on('mouseover', function() {
+            svg.select(this)
+              .transition()
+              // .duration(100)
+              .attr('stroke-opacity', 0.5);
+          })
+          .on('mouseout', function() {
+            svg.select(this)
+              .transition()
+              .duration(500)
+              .attr('stroke-opacity', 1.0);
+          });
+
+        var totalLength = path.node().getTotalLength();
+
+        path.attr('stroke-dasharray', totalLength + ' ' + totalLength)
+          .attr('stroke-dashoffset', totalLength)
+          .transition().duration(5000)
+          // .ease('linear')
+          .attr('stroke-dashoffset', 0);
+
         _ctx.lineTo(originX + cursorX, topPaddingY);
         _ctx.arcTo(
           originX + cursorX + ((genreData.cursorX - cursorX) / 4),
@@ -244,7 +301,6 @@ var vizify = (function($, svg) {
           arcRadius);
         _ctx.lineTo(originX + genreData.cursorX, 9 * vizHeight / 10);
 
-
         _ctx.stroke();
 
         genreData.cursorX += genreLineWidth * 0.5;
@@ -262,12 +318,11 @@ var vizify = (function($, svg) {
   }
 
   function drawSvg(data) {
-    svg.select('#vizifySvg')
-      .selectAll('div')
-      .data([1,2,3,4])
-      .enter().append('div')
-      .style('width', function(d) { return d * 10 + 'px'; })
-      .text(function(d) { return d; });;
+
+  }
+
+  function path(points) {
+
   }
 
   return _vizify;

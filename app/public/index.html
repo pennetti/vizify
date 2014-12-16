@@ -4,8 +4,23 @@
     <title>Vizify</title>
     <link type="text/css" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css" rel="stylesheet" />
     <link type="text/css" href="//maxcdn.bootstrapcdn.com/font-awesome/4.2.0/css/font-awesome.min.css" rel="stylesheet">
-    <link type="text/css" href="styles.css" rel="stylesheet" />
+    <link type="text/css" href="css/styles.css" rel="stylesheet" />
+    <link type="text/css" href="css/vizify.css" rel="stylesheet" />
     <style type="text/css">
+    .path {
+      stroke-dasharray: 1000;
+      stroke-dashoffset: 1000;
+      animation: dash 5s linear alternate infinite;
+    }
+
+    @keyframes dash {
+      from {
+        stroke-dashoffset: 1000;
+      }
+      to {
+        stroke-dashoffset: 0;
+      }
+    }
       body {
         padding-top: 70px;  /*for the nav-bar*/
       }

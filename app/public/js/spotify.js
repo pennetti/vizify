@@ -40,21 +40,27 @@ var spotifyApi = (function($) {
       type: 'get',
       dataType: 'json',
       data: data,
+      tryCount: 0,
+      retryLimit: 3,
+      retryAfter: 2000,
       headers: {
         'Authorization': 'Bearer ' + _access_token
       },
-      // statusCode: {
-      //   429: function(response) {
-      //     console.log('429', response);
-      //     console.log('429', response.getAllResponseHeaders());
-      //   }
-      // },
       success: function(response) {
         callback(response);
       },
       error: function(response, status, request) {
-        // console.log(request.getResponseHeader('Retry-After'));
-        callback(null);
+        if (response.status == 429) {
+          this.tryCount++;
+          if (this.tryCount <= this.retryLimit) {
+            console.log('retrying...');
+            setTimeout($.ajax(this), this.retryAfter);
+            return;
+          }
+          return;
+        } else {
+          callback(null);
+        }
       }
     });
   }

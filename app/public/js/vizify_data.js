@@ -33,8 +33,8 @@ var vizifyData = (function($) {
   var _sp = new spotifyApi(),
       _months = {},
       _tracks = { total: 0 },   // track -> artist
-      _artists = { total: 0 },  // artist -> subgenre
       _genres = { total: 0 },   // subgenre -> genre
+      _artists = { total: 0 },  // artist -> subgenre
       _genreFamilies = { total: 0 },
       _data = { months: {}, total: 0 };
 
@@ -248,7 +248,7 @@ var vizifyData = (function($) {
     var month = null;
 
     for (var trackId in _tracks) {
-      if (trackId === 'total') { continue; }
+      if (trackId === 'total') continue;
       month = _tracks[trackId].added_at.substring(0, 7);
 
       if (month in _months) {
@@ -287,12 +287,12 @@ var vizifyData = (function($) {
         deferred = $.Deferred();
 
     for (var trackId in _tracks) {
-      if (trackId === 'total') { continue; }
+      if (trackId === 'total') continue;
 
       for (var i = 0; i < _tracks[trackId].artists.length; i++) {
         progressTotal++;
         artistId = _tracks[trackId].artists[i];
-        if (artistId === null) { continue; }
+        if (artistId === null) continue;
 
         if (artistId in _artists) {
           progress++;
@@ -348,7 +348,7 @@ var vizifyData = (function($) {
     getGenreFamilies();
 
     for (var artistId in _artists) {
-      if (artistId === 'total') { continue; }
+      if (artistId === 'total') continue;
 
       for (var i = 0; i < _artists[artistId].genres.length; i++) {
         genre = _artists[artistId].genres[i];
@@ -418,7 +418,7 @@ var vizifyData = (function($) {
     _data.months = {};
 
     for (var month in _months) {
-      if (month === 'total') { continue; }
+      if (month === 'total') continue;
 
       trackIds = _months[month];
       progress += trackIds.length;
@@ -433,7 +433,7 @@ var vizifyData = (function($) {
         artists = _tracks[trackIds[i]].artists;
 
         for (var j = 0; j < artists.length; j++) {
-          if (_artists[artists[j]] === undefined) { continue; }
+          if (_artists[artists[j]] === undefined) continue;
           artist = _artists[artists[j]];
 
           for (var k = 0; k < artist.genres.length; k++) {
