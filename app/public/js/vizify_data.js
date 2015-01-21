@@ -1,7 +1,10 @@
-var vizifyData = (function($) {
+var VizifyData = (function($) {
 
   // TODO: make this functional
   // TODO: add option to get tracks from all playlists
+  // TODO: track artists with unclassified genres
+  // TODO: move large api calls to 'spotify.js'
+  var vizifyData = {};
 
   /**
    * Helper function to return resolution of all promises in passed array
@@ -30,35 +33,49 @@ var vizifyData = (function($) {
     return value && JSON.parse(value);
   };
 
-  var _sp = new spotifyApi(),
-      _months = {},
-      _tracks = { total: 0 },   // track -> artist
-      _genres = { total: 0 },   // subgenre -> genre
-      _artists = { total: 0 },  // artist -> subgenre
-      _genreFamilies = { total: 0 },
-      _data = { months: {}, total: 0 };
+  var _months = Object.create(null),
+      _tracks = Object.create(null),   // track -> artist
+      _artists = Object.create(null),  // artist -> subgenre
+      _genres = Object.create(null),   // subgenre -> genre
+      _genreFamilies = Object.create(null),
+      _data = Object.create(null);
 
-  /**
-   * @constructor
-   */
-  var _vizifyData = function() {};
+  Object.defineProperty(_tracks, 'total', {
+    value: 0,
+    writable: true,
+    enumerable: false
+  });
+  Object.defineProperty(_months, 'total', {
+    value: 0,
+    writable: true,
+    enumerable: false
+  });
+  Object.defineProperty(_artists, 'total', {
+    value: 0,
+    writable: true,
+    enumerable: false
+  });
+  Object.defineProperty(_genres, 'total', {
+    value: 0,
+    writable: true,
+    enumerable: false
+  });
+  Object.defineProperty(_data, 'total', {
+    value: 0,
+    writable: true,
+    enumerable: false
+  });
 
   /**
    * Get all tracks and structure data object for visualization
-   * @return {promise} resolved when data object is returned
+   * @return {Promise} resolved when data object is returned
    */
-  _vizifyData.prototype.getDataObject = function() {
-
-    var deferred = $.Deferred();
-
-    getTracks().then(function() {
-      getData().then(function() {
-        buildDataObject(deferred);
-        deferred.resolve(_data);
+  vizifyData.getTrackDataObject = function() {
+    return getTracks().then(function() {
+      return getTrackData().then(function() {
+        return buildTrackDataObject();
       });
     });
-
-    return deferred.promise();
   };
 
   /**
@@ -96,25 +113,28 @@ var vizifyData = (function($) {
 
     var deferred = $.Deferred();
 
-    _sp.getUserTracks(0, 50, function(tracks) {
-      processUserLibrary(tracks, 0, deferred);
+    SpotifyApi.getUserTracks(0, function(tracks) {
+      processUserTracks(tracks, 0, deferred);
     });
 
     return deferred.promise();
   }
 
+  // TODO: function processTrack to remove duplicate code
+
   /**
    * @param {object}
    * @param {number}
-   * @param {promise}
+   * @param {deferred}
    */
-  function processUserLibrary(tracks, offset, deferred) {
+  function processUserTracks(tracks, offset, deferred) {
     offset += tracks.items.length;
     deferred.notify(Math.round(offset / tracks.total * 100));
 
     for (var i = 0, track = null; i < tracks.items.length; i++) {
       track = tracks.items[i].track;
-      _tracks.total++;
+
+      _tracks.total += 1;
       _tracks[track.id] = {
         artists: [],
         added_at: tracks.items[i].added_at
@@ -126,8 +146,8 @@ var vizifyData = (function($) {
     }
 
     if (tracks.next) {
-      _sp.getUserTracks(offset, 50, function(tracks) {
-        processUserLibrary(tracks, offset, deferred);
+      SpotifyApi.getUserTracks(offset, function(tracks) {
+        processUserTracks(tracks, offset, deferred);
       });
     } else {
       deferred.resolve();
@@ -141,8 +161,8 @@ var vizifyData = (function($) {
 
     var deferred = $.Deferred();
 
-    _sp.getUserProfile(function(user) {
-      _sp.getUserStarredTracks(0, 100, user.id, function(tracks) {
+    SpotifyApi.getUserProfile(function(user) {
+      SpotifyApi.getUserStarredTracks(0, user.id, function(tracks) {
         processUserStarredPlaylist(tracks, 0, user.id, deferred);
       });
     });
@@ -168,20 +188,22 @@ var vizifyData = (function($) {
       if (track.id in _tracks) {
         _tracks[track.id].added_at = tracks.items[i].added_at;
       } else {
-        _tracks.total++;
+        _tracks.total += 1;
         _tracks[track.id] = {
           artists: [],
           added_at: tracks.items[i].added_at
         };
 
         for (var j = 0; j < track.artists.length; j++) {
-          _tracks[track.id].artists.push(track.artists[j].id);
+          if (track.artists[j].id) {  // fix error where artist ID is 'null'
+            _tracks[track.id].artists.push(track.artists[j].id);
+          }
         }
       }
     }
 
     if (tracks.next) {
-      _sp.getUserStarredTracks(offset, 100, userId, function(tracks) {
+      SpotifyApi.getUserStarredTracks(offset, userId, function(tracks) {
         processUserStarredPlaylist(tracks, offset, userId, deferred);
       });
     } else {
@@ -192,7 +214,7 @@ var vizifyData = (function($) {
   /**
    *
    */
-  function getData() {
+  function getTrackData() {
 
     var deferred = $.Deferred();
 
@@ -248,10 +270,9 @@ var vizifyData = (function($) {
     var month = null;
 
     for (var trackId in _tracks) {
-      if (trackId === 'total') continue;
       month = _tracks[trackId].added_at.substring(0, 7);
 
-      if (month in _months) {
+      if (_months[month]) {
         _months[month].push(trackId);
       } else {
         _months[month] = [trackId];
@@ -280,37 +301,51 @@ var vizifyData = (function($) {
   function getArtists() {
 
     var artists = {},
-        progress = 0,
+        // progress = 0,
         promises = [],
+        artistIds = [],
         artistId = null,
-        progressTotal = 0,
+        MAX_ARTISTS = 50,
+        // progressTotal = 0,
         deferred = $.Deferred();
 
     for (var trackId in _tracks) {
-      if (trackId === 'total') continue;
 
       for (var i = 0; i < _tracks[trackId].artists.length; i++) {
-        progressTotal++;
+        // progressTotal++;
         artistId = _tracks[trackId].artists[i];
-        if (artistId === null) continue;
 
         if (artistId in _artists) {
-          progress++;
+          // progress++;
           _artists[artistId].total++;
         } else {
           _artists.total++;
           _artists[artistId] = { total: 1 };
-          promises.push(_sp.getArtistById(artistId, function() {
-            progress++;
-            deferred.notify(Math.round(progress / progressTotal * 100));
-          }).done(function(artist) {
-            _artists[artist.id].genres = artist.genres;
-            })
-            .fail(function(error) {
-              console.log(error);
-            }));
+
+          artistIds.push(artistId);
         }
       }
+    }
+
+    var processArtists = function(response) {
+      var artist = null,
+          artists = response.artists;
+
+      for (var i = 0; i < artists.length; i++) {
+        artist = artists[i];
+        if (!_artists[artist.id]) {
+          _artists[artist.id] = { total: 1 };
+        }
+        if (!artist.genres) {
+          console.log(artist);
+        }
+        _artists[artist.id].genres = artist.genres;
+      }
+    }
+
+    for (i = 0; i < artistIds.length; i += MAX_ARTISTS) {
+      promises.push(SpotifyApi.getArtistsByIds(
+        artistIds.slice(i, i + MAX_ARTISTS).join(','), processArtists));
     }
 
     $.whenall(promises).done(function() {
@@ -348,7 +383,11 @@ var vizifyData = (function($) {
     getGenreFamilies();
 
     for (var artistId in _artists) {
-      if (artistId === 'total') continue;
+
+      if (!_artists[artistId].genres) {
+        console.log(artistId, _artists[artistId]);
+        continue;
+      }
 
       for (var i = 0; i < _artists[artistId].genres.length; i++) {
         genre = _artists[artistId].genres[i];
@@ -403,7 +442,7 @@ var vizifyData = (function($) {
    *   "total": 10000 // total tracks in collection
    * }
    */
-  function buildDataObject(deferred) {
+  function buildTrackDataObject(deferred) {
     // TODO: clean up, use object notation rather than dot
     var genre = null,
         genres = null,
@@ -418,11 +457,10 @@ var vizifyData = (function($) {
     _data.months = {};
 
     for (var month in _months) {
-      if (month === 'total') continue;
 
       trackIds = _months[month];
       progress += trackIds.length;
-      deferred.notify(Math.round(progress / _data.total * 100));
+      // deferred.notify(Math.round(progress / _data.total * 100));
 
       _data.months[month] = {
         total: trackIds.length,
@@ -433,8 +471,10 @@ var vizifyData = (function($) {
         artists = _tracks[trackIds[i]].artists;
 
         for (var j = 0; j < artists.length; j++) {
-          if (_artists[artists[j]] === undefined) continue;
+
           artist = _artists[artists[j]];
+
+          if (!artist.genres) {console.log(artists[j], artist);continue;};
 
           for (var k = 0; k < artist.genres.length; k++) {
             for (var m = 0; m < _genres[_artists[_tracks[trackIds[i]]
@@ -475,6 +515,7 @@ var vizifyData = (function($) {
         }
       }
     }
+    console.log('data: ', _data);
   }
 
   /**
@@ -522,5 +563,5 @@ var vizifyData = (function($) {
       // .text(percentComplete + '%');
   }
 
-  return _vizifyData;
+  return vizifyData;
 }(jQuery));

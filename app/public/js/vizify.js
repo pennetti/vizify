@@ -1,6 +1,11 @@
-var vizify = (function($, svg) {
+var Vizify = (function($, svg) {
 
   // TODO: move to util module to keep DRY
+  // TODO: bug where paths stop being drawn on mouseover
+  // TODO: 429 errors
+  //
+  var vizify = {};
+
   /**
    * Store a JSON object in local storage
    * @param {key} local storage object key
@@ -25,10 +30,8 @@ var vizify = (function($, svg) {
       .attr('width', window.innerWidth)
       .attr('height', window.innerHeight);
 
-  var _vd = new vizifyData(),
+  var _vd = VizifyData,
       _data = null,
-      _canvas = document.getElementById('vizifyCanvas'),
-      _ctx = _canvas.getContext('2d'),
       _colors = [ // http://flatuicolors.com/
         '#E74C3C', '#2ECC71', '#3498DB', '#E67E22', '#1ABC9C', '#9B59B6',
         '#F1C40F', '#27AE60', '#2980B9', '#C0392B', '#16A085', '#8E44AD',
@@ -38,15 +41,10 @@ var vizify = (function($, svg) {
         'August', 'September', 'October', 'November', 'December'];
 
   /**
-   * @constructor
-   */
-  var _vizify = function() {};
-
-  /**
    *
    * @return {promise} resolved when visualization is drawn
    */
-  _vizify.prototype.getVisualization = function() {
+  vizify.getVisualization = function() {
 
     var deferred = $.Deferred();
 
@@ -56,7 +54,7 @@ var vizify = (function($, svg) {
       drawSvg(_data);
       deferred.resolve();
     } else {
-      _vd.getDataObject().then(function(data) {
+      _vd.getTrackDataObject().then(function(data) {
         _data = data;
         localStorage.setObject('_data', _data);
         draw(_data);
@@ -71,7 +69,7 @@ var vizify = (function($, svg) {
   /**
    *
    */
-  _vizify.prototype.draw = function() {
+  vizify.draw = function() {
     draw(_data);
     drawSvg(_data);
   };
@@ -80,10 +78,8 @@ var vizify = (function($, svg) {
    * @param {object}
    */
   function draw(data) {
-
-    // dynamic resizing
-    _ctx.canvas.width = window.innerWidth - 100;
-    _ctx.canvas.height = window.innerHeight;
+    return;
+    // TODO: dynamic resizing
 
     var dataTotal = null,
         dataMonths = null,
@@ -102,9 +98,9 @@ var vizify = (function($, svg) {
         sortedMonthGenres = null,
 
         originX = 0,
-        originY = _ctx.canvas.height / 10,
-        vizWidth = _ctx.canvas.width - originX,
-        vizHeight = _ctx.canvas.height - originY,
+        originY = window.innerHeight / 10,
+        vizWidth = window.innerWidth - originX,
+        vizHeight = window.innerHeight - originY,
 
         i = 0,
         j = 0,
@@ -129,7 +125,7 @@ var vizify = (function($, svg) {
         fontSize = null,
         genreMetadata = {};
 
-    dataTotal = data.total;
+    dataTotal = data.total || 0;
     dataMonths = data.months;
     sortedMonths = Object.keys(dataMonths).sort();
 
@@ -184,13 +180,6 @@ var vizify = (function($, svg) {
       genre = genreMetadata[sortedGenres[i]];
       genre.cursorX = cursorX;
       cursorX += genre.total * lineWidth;
-
-      _ctx.save();
-      _ctx.font = '10px Verdana';  // font should scale
-      _ctx.fillStyle = '#2c3e50';
-      _ctx.rotate(Math.PI / 2);
-      _ctx.fillText(sortedGenres[i], vizHeight, -genre.cursorX);
-      _ctx.restore();
     }
 
     for (i = 0, cursorX = 0, cursorY = 0; i < sortedMonths.length; i++) {
@@ -200,19 +189,6 @@ var vizify = (function($, svg) {
       sortedMonthGenres = Object.keys(monthGenres).sort(function(a, b) {
         return -(monthGenres[a].total - monthGenres[b].total);
       });
-
-      _ctx.save();
-      _ctx.font = '10px Verdana';  // font should scale
-      _ctx.fillStyle = '#2c3e50';
-      if (parseInt(month.substring(0, 4), 10) > year) {
-        year = parseInt(month.substring(0, 4), 10);
-        _ctx.fillText(year, cursorX, 10);
-      }
-      _ctx.rotate(Math.PI / 2);
-      _ctx.fillText('      ' +
-        _monthNames[parseInt(month.substring(5, 7), 10) - 1].substring(0, 1),
-        0, -cursorX);
-      _ctx.restore();
 
       for (j = 0; j < sortedMonthGenres.length; j++) {
         genre = sortedMonthGenres[j];
@@ -224,13 +200,6 @@ var vizify = (function($, svg) {
         cursorX += genreLineWidth * 0.5;
         genreData.cursorX += genreLineWidth * 0.5;
         genreData.cursorY += genreLineWidth * 0.1; // could be normalized
-
-        _ctx.beginPath();
-        _ctx.moveTo(originX + cursorX, originY + cursorY);
-
-        _ctx.globalAlpha = 0.9;
-        _ctx.lineWidth = genreLineWidth;
-        _ctx.strokeStyle = genreData.color;
 
         var path = [
           { x: originX + cursorX, y: originY + cursorY },
@@ -262,6 +231,7 @@ var vizify = (function($, svg) {
           .attr('stroke', genreData.color)
           .attr('stroke-width', genreLineWidth)
           .attr('fill', 'none')
+
           .on('mouseover', function() {
             svg.select(this)
               .transition()
@@ -282,26 +252,6 @@ var vizify = (function($, svg) {
           .transition().duration(5000)
           // .ease('linear')
           .attr('stroke-dashoffset', 0);
-
-        _ctx.lineTo(originX + cursorX, topPaddingY);
-        _ctx.arcTo(
-          originX + cursorX + ((genreData.cursorX - cursorX) / 4),
-          originY + genreData.cursorY,
-          originX + cursorX + ((genreData.cursorX - cursorX) / 2),
-          originY + genreData.cursorY,
-          arcRadius);
-        _ctx.lineTo(
-          originX + genreData.cursorX,
-          originY + genreData.cursorY);
-        _ctx.arcTo(
-          originX + genreData.cursorX,
-          originY + genreData.cursorY,
-          originX + genreData.cursorX,
-          originY + btmPaddingY,
-          arcRadius);
-        _ctx.lineTo(originX + genreData.cursorX, 9 * vizHeight / 10);
-
-        _ctx.stroke();
 
         genreData.cursorX += genreLineWidth * 0.5;
         genreData.cursorY += genreLineWidth * 0.5;
@@ -325,5 +275,5 @@ var vizify = (function($, svg) {
 
   }
 
-  return _vizify;
+  return vizify;
 }(jQuery, d3));

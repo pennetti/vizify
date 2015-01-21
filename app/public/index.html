@@ -7,7 +7,7 @@
     <link type="text/css" href="css/styles.css" rel="stylesheet" />
     <link type="text/css" href="css/vizify.css" rel="stylesheet" />
     <style type="text/css">
-    .path {
+/*    .path {
       stroke-dasharray: 1000;
       stroke-dashoffset: 1000;
       animation: dash 5s linear alternate infinite;
@@ -20,17 +20,12 @@
       to {
         stroke-dashoffset: 0;
       }
-    }
+    }*/
       body {
         padding-top: 70px;  /*for the nav-bar*/
       }
       #login, #loggedin {
         display: none;
-      }
-      #vizifyCanvas {
-        /*padding-top: 50px;*/
-        /*padding-left: 10px;*/
-        /*float: center;*/
       }
       #vizifySvg div {
         font: 10px sans-serif;
@@ -96,7 +91,6 @@
         </div>
       </div>
 
-      <canvas id="vizifyCanvas" width="2400" height="2400"></canvas>
       <div id="vizifySvg"></div>
     </div>
 
@@ -136,13 +130,10 @@
           if (error) {
             alert('There was an error during the authentication');
           } else if (access_token) {
-
-            var _vizify = new vizify();
-
-            _vizify.getVisualization();
-            window.addEventListener('resize', function() {
-              _vizify.draw();
-            }, true);
+            Vizify.getVisualization();
+            // window.addEventListener('resize', function() {
+            //   Vizify.draw();
+            // }, true);
 
             $('#login').hide();
             $('#loggedin').show();
