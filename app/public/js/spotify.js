@@ -35,9 +35,6 @@ var SpotifyApi = (function($) {
       type: 'get',
       dataType: 'json',
       data: data,
-      // tryCount: 0,
-      // retryLimit: 3,
-      // retryAfter: 5000,
       headers: {
         'Authorization': 'Bearer ' + _access_token
       },
@@ -45,18 +42,7 @@ var SpotifyApi = (function($) {
         callback(response);
       },
       error: function(response, status, request) {
-        // if (response.status === 429) {
-        //   this.tryCount++;
-        //   console.log(response);
-        //   if (this.tryCount < this.retryLimit) {
-        //     console.log('retrying...');
-        //     setTimeout($.ajax(this), this.retryAfter);
-        //     return;
-        //   }
-        //   return;
-        // } else {
-          callback(null);
-        // }
+        callback(null);
       }
     });
   }

@@ -2,28 +2,9 @@ var Vizify = (function($, svg) {
 
   // TODO: move to util module to keep DRY
   // TODO: bug where paths stop being drawn on mouseover
-  // TODO: 429 errors
+  // TODO: refresh token
   //
   var vizify = {};
-
-  /**
-   * Store a JSON object in local storage
-   * @param {key} local storage object key
-   * @param {value} JSON object
-   */
-  Storage.prototype.setObject = function(key, value) {
-    this.setItem(key, JSON.stringify(value));
-  };
-
-  /**
-   * Retrieve a JSON object from local storage
-   * @param {string} key of local storage object to return
-   * @return {object} JSON object value stored at given key
-   */
-  Storage.prototype.getObject = function(key) {
-    var value = this.getItem(key);
-    return value && JSON.parse(value);
-  };
 
   var svgCanvas = svg.select('#vizifySvg')
     .append('svg:svg')
@@ -48,20 +29,19 @@ var Vizify = (function($, svg) {
 
     var deferred = $.Deferred();
 
-    if (localStorage.getItem('_data')) {
-      _data = localStorage.getObject('_data');
-      draw(_data);
-      drawSvg(_data);
-      deferred.resolve();
-    } else {
+    // if (localStorage.getItem('_data')) {
+    //   _data = localStorage.getObject('_data');
+    //   draw(_data);
+    //   drawSvg(_data);
+    //   deferred.resolve();
+    // } else {
       _vd.getTrackDataObject().then(function(data) {
         _data = data;
-        localStorage.setObject('_data', _data);
+        // localStorage.setObject('_data', _data);
         draw(_data);
-        drawSvg(_data);
         deferred.resolve();
       });
-    }
+    // }
 
     return deferred.promise();
   };
@@ -71,7 +51,6 @@ var Vizify = (function($, svg) {
    */
   vizify.draw = function() {
     draw(_data);
-    drawSvg(_data);
   };
 
   /**
@@ -265,14 +244,6 @@ var Vizify = (function($, svg) {
 
       cursorX += topPaddingX;
     }
-  }
-
-  function drawSvg(data) {
-
-  }
-
-  function path(points) {
-
   }
 
   return vizify;
