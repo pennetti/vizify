@@ -29,19 +29,12 @@ var Vizify = (function($, svg) {
 
     var deferred = $.Deferred();
 
-    // if (localStorage.getItem('_data')) {
-    //   _data = localStorage.getObject('_data');
-    //   draw(_data);
-    //   drawSvg(_data);
-    //   deferred.resolve();
-    // } else {
-      _vd.getTrackDataObject().then(function(data) {
-        _data = data;
-        // localStorage.setObject('_data', _data);
-        draw(_data);
-        deferred.resolve();
-      });
-    // }
+    _vd.getTrackDataObject().then(function(data) {
+      console.log(data);
+      _data = data;
+      draw(_data);
+      deferred.resolve();
+    });
 
     return deferred.promise();
   };
@@ -57,7 +50,6 @@ var Vizify = (function($, svg) {
    * @param {object}
    */
   function draw(data) {
-    return;
     // TODO: dynamic resizing
 
     var dataTotal = null,
@@ -104,8 +96,8 @@ var Vizify = (function($, svg) {
         fontSize = null,
         genreMetadata = {};
 
-    dataTotal = data.total || 0;
-    dataMonths = data.months;
+    dataTotal = _data.total || 0;
+    dataMonths = _data.months;
     sortedMonths = Object.keys(dataMonths).sort();
 
     // TODO: clean this up
@@ -198,6 +190,9 @@ var Vizify = (function($, svg) {
           { x: originX + genreData.cursorX, y: originY + btmPaddingY },
           { x: originX + genreData.cursorX, y: 9 * vizHeight / 10 }
         ];
+
+        // debugger;
+        // console.log(path);
 
         var lineFunction = svg.svg.line()
           .x(function(d) { return d.x; })

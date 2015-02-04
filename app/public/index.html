@@ -132,9 +132,9 @@
             alert('There was an error during the authentication');
           } else if (access_token) {
             Vizify.getVisualization();
-            // window.addEventListener('resize', function() {
-            //   Vizify.draw();
-            // }, true);
+            window.addEventListener('resize', function() {
+              Vizify.draw();
+            }, true);
 
             $('#login').hide();
             $('#loggedin').show();

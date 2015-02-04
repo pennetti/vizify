@@ -6,26 +6,13 @@ var VizifyData = (function($) {
   // TODO: move large api calls to 'spotify.js'
   var vizifyData = {};
 
-  var _months = Object.create(null),
-      _tracks = Object.create(null),   // track -> artist
-      _artists = Object.create(null),  // artist -> subgenre
-      _genres = Object.create(null),   // subgenre -> genre
-      _genreFamilies = Object.create(null),
-      _trackData = Object.create(null);
+  var _months = Object.create(null),   // months -> tracks
+      _tracks = Object.create(null),   // tracks -> artists
+      _artists = Object.create(null),  // artists -> subgenres
+      _subgenres = Object.create(null),   // subgenres -> genres
+      _genreFamilies = Object.create(null);
 
   Object.defineProperty(_tracks, 'total', {
-    value: 0, writable: true, enumerable: false
-  });
-  Object.defineProperty(_months, 'total', {
-    value: 0, writable: true, enumerable: false
-  });
-  Object.defineProperty(_artists, 'total', {
-    value: 0, writable: true, enumerable: false
-  });
-  Object.defineProperty(_genres, 'total', {
-    value: 0, writable: true, enumerable: false
-  });
-  Object.defineProperty(_trackData, 'total', {
     value: 0, writable: true, enumerable: false
   });
 
@@ -34,6 +21,11 @@ var VizifyData = (function($) {
    * @return {Promise} resolved when data object is returned
    */
   vizifyData.getTrackDataObject = function() {
+
+    if (localStorage.getItem('trackData')) {
+      return $.Deferred().promise(localStorage.getObject('trackData'));
+    }
+
     return getTracks().then(function() {
       return getTrackData().then(function() {
         return buildTrackDataObject();
@@ -48,55 +40,19 @@ var VizifyData = (function($) {
 
     var deferred = $.Deferred();
 
-    if (localStorage.getItem('_tracks')) {
-      _tracks = localStorage.getObject('_tracks');
-      progressBar('userStarredPlaylistProgressBar', 100);
-      progressBar('userLibraryProgressBar', 100);
-      deferred.resolve(_tracks);
-    } else {
-      getUserLibrary().then(function() {
-        getUserStarredPlaylist().then(function() {
-          localStorage.setObject('_tracks', _tracks);
-          deferred.resolve(_tracks);
-        }).progress(function(percentComplete) {
-          progressBar('userStarredPlaylistProgressBar', percentComplete);
-        });
-      }).progress(function(percentComplete) {
-        progressBar('userLibraryProgressBar', percentComplete);
+    getUserLibrary().then(function() {
+      getUserStarredPlaylist().then(function() {
+        deferred.resolve();
+      })
+      .progress(function(percentComplete) {
+        progressBar('userStarredPlaylistProgressBar', percentComplete);
       });
-    }
+    })
+    .progress(function(percentComplete) {
+      progressBar('userLibraryProgressBar', percentComplete);
+    });
 
     return deferred.promise();
-  }
-
-  function processTracks(tracks) {
-    for (var i = 0, track = null; i < tracks.items.length; i++) {
-      track = tracks.items[i].track;
-
-      if (track.id in _tracks) {
-        _tracks[track.id].added_at =
-          minDate(_tracks[track.id].added_at, tracks.items[i].added_at);
-      } else {
-        _tracks.total += 1;
-        _tracks[track.id] = {
-          artists: [],
-          added_at: tracks.items[i].added_at
-        };
-
-        for (var j = 0; j < track.artists.length; j++) {
-          if (track.artists[j].id) {  // fix error where artist ID is 'null'
-            _tracks[track.id].artists.push(track.artists[j].id);
-          }
-        }
-      }
-    }
-  }
-
-  function minDate(a, b) {
-    a = new Date(a).getTime();
-    b = new Date(b).getTime();
-
-    return new Date(Math.min(a, b)).toISOString();
   }
 
   /**
@@ -171,6 +127,36 @@ var VizifyData = (function($) {
     }
   }
 
+  function processTracks(tracks) {
+    for (var i = 0, track = null; i < tracks.items.length; i++) {
+      track = tracks.items[i].track;
+
+      if (track.id in _tracks) {
+        _tracks[track.id].added_at =
+          minDate(_tracks[track.id].added_at, tracks.items[i].added_at);
+      } else {
+        _tracks.total += 1;
+        _tracks[track.id] = {
+          artists: [],
+          added_at: tracks.items[i].added_at
+        };
+
+        for (var j = 0; j < track.artists.length; j++) {
+          if (track.artists[j].id) {  // fix error where artist ID is 'null'
+            _tracks[track.id].artists.push(track.artists[j].id);
+          }
+        }
+      }
+    }
+  }
+
+  function minDate(a, b) {
+    a = new Date(a).getTime();
+    b = new Date(b).getTime();
+
+    return new Date(Math.min(a, b)).toISOString();
+  }
+
   /**
    *
    */
@@ -179,36 +165,38 @@ var VizifyData = (function($) {
     var deferred = $.Deferred();
 
     getGenreFamilies();
-
-    // if (localStorage.getItem('_months')) {
-    //   _months = localStorage.getObject('_months');
-    // } else {
-      getMonths();
-    //   localStorage.setObject('_months', _months);
-    // }
-
-    // if (localStorage.getItem('_artists')) {
-    //   _artists = localStorage.getObject('_artists');
-    //   progressBar('genreDataProgressBar', 100);
-    //   if (localStorage.getItem('_genres')) {
-    //     _genres = localStorage.getObject('_genres');
-    //   } else {
-        // getGenres();
-        // localStorage.setObject('_genres', _genres);
-      // }
-      // deferred.resolve();
-    // } else {
-      getArtists().then(function() {
-        getGenres();
-        // localStorage.setObject('_genres', _genres);
-        // localStorage.setObject('_artists', _artists);
-        deferred.resolve();
-      }).progress(function(percentComplete) {
-        progressBar('genreDataProgressBar', percentComplete);
-      });
-    // }
+    getTracksByMonth();
+    getArtists().then(function() {
+      getArtistSubgenres();
+      deferred.resolve();
+    })
+    .progress(function(percentComplete) {
+      progressBar('genreDataProgressBar', percentComplete);
+    });
 
     return deferred.promise();
+  }
+
+  /**
+   *
+   * @example
+   * {
+   *   "indie pop": {
+   *     "family": "pop"
+   *   },
+   *   "indietronica": {},
+   *   "indie rock": {},
+   * }
+   */
+  function getGenreFamilies() {
+    $.getJSON('/js/genre_families.json', function(genres) {
+      for (var i = 0; i < genres.length; i++) {
+        _genreFamilies[genres[i].name] = {
+          family: genres[i].family
+          // pop: genres[i].pop   // popularity
+        };
+      }
+    });
   }
 
   /**
@@ -225,7 +213,7 @@ var VizifyData = (function($) {
    * }
    *
    */
-  function getMonths() {
+  function getTracksByMonth() {
 
     var month = null;
 
@@ -236,18 +224,7 @@ var VizifyData = (function($) {
         _months[month].push(trackId);
       } else {
         _months[month] = [trackId];
-        _months.total++;
       }
-    }
-  }
-
-  function processArtists(artists) {
-    for (var i = 0, artist = null; i < artists.length; i++) {
-      artist = artists[i];
-      if (!_artists[artist.id]) {
-        _artists[artist.id] = { total: 1 };
-      }
-      _artists[artist.id].genres = artist.genres;
     }
   }
 
@@ -270,37 +247,27 @@ var VizifyData = (function($) {
    */
   function getArtists() {
 
-    var artists = {},
-        // progress = 0,
-        promises = [],
+    var promises = [],
         artistIds = [],
         artistId = null,
-        MAX_ARTISTS = 50,
-        // progressTotal = 0,
         deferred = $.Deferred();
 
     for (var trackId in _tracks) {
 
       for (var i = 0; i < _tracks[trackId].artists.length; i++) {
-        // progressTotal++;
         artistId = _tracks[trackId].artists[i];
 
-        if (artistId in _artists) {
-          // progress++;
-          _artists[artistId].total++;
-        } else {
-          _artists.total++;
-          _artists[artistId] = { total: 1 };
-
+        if (!(artistId in _artists)) {
           artistIds.push(artistId);
         }
       }
     }
 
-    for (i = 0; i < artistIds.length; i += MAX_ARTISTS) {
+    for (var j = 0, max = 50; j < artistIds.length; j += max) {
       promises.push(SpotifyApi.getArtistsByIds(
-        artistIds.slice(i, i + MAX_ARTISTS).join(','), function(response) {
+        artistIds.slice(j, j + max).join(','), function(response) {
           processArtists(response.artists);
+          deferred.notify(Math.round(j / artistIds.length * 100));
         }));
     }
 
@@ -309,6 +276,14 @@ var VizifyData = (function($) {
     });
 
     return deferred.promise();
+  }
+
+  function processArtists(artists) {
+    for (var i = 0, artist = null; i < artists.length; i++) {
+      artist = artists[i];
+
+      _artists[artist.id] = artist.genres;
+    }
   }
 
   /**
@@ -331,33 +306,19 @@ var VizifyData = (function($) {
    *   "total": 100
    * }
    */
-  function getGenres() {
-
-    var genre = null,
-        genres = {};
-
-    getGenreFamilies();
-
+  function getArtistSubgenres() {
     for (var artistId in _artists) {
 
-      for (var i = 0; i < _artists[artistId].genres.length; i++) {
-        genre = _artists[artistId].genres[i];
+      for (var i = 0, subgenre = null; i < _artists[artistId].length; i++) {
+        subgenre = _artists[artistId][i];
 
-        if (genre in _genres) {
-          _genres[genre].total += _artists[artistId].total;
-          _genres[genre].artists.push(artistId);
+        if (subgenre in _subgenres) {
+          _subgenres[subgenre].push(artistId);
         } else {
-          _genres.total++;
-          _genres[genre] = {
-            artists: [artistId],
-            total: _artists[artistId].total,
-            family: getGenreFamilyList(genre)
-          };
+          _subgenres[subgenre] = [artistId];
         }
       }
     }
-
-    return genres;
   }
 
   /**
@@ -393,100 +354,79 @@ var VizifyData = (function($) {
    *   "total": 10000 // total tracks in collection
    * }
    */
-  function buildTrackDataObject(deferred) {
-    // TODO: clean up, use object notation rather than dot
+  function buildTrackDataObject() {
+
+    if (localStorage.getItem('trackData')) {
+      return localStorage.getObject('trackData');
+    }
+
     var genre = null,
         genres = null,
         subgenre = null,
         subgenres = null,
-        trackIds = null,
+        tracks = null,
         artist = null,
         artists = null,
-        progress = 0;
+        monthGenres = null,
+        genreSubgenres = null,
+        trackData = Object.create(null);
 
-    _trackData.total = _tracks.total;
-    _trackData.months = {};
+    trackData.total = _tracks.total;
+    trackData.months = Object.create(null);
 
     for (var month in _months) {
+      tracks = _months[month];
 
-      trackIds = _months[month];
-      progress += trackIds.length;
-      // deferred.notify(Math.round(progress / _trackData.total * 100));
+      trackData.months[month] = Object.create(null);
+      trackData.months[month].total = tracks.length;
+      trackData.months[month].genres = Object.create(null);
 
-      _trackData.months[month] = {
-        total: trackIds.length,
-        genres: {}
-      };
-
-      for (var i = 0; i < trackIds.length; i++) {
-        artists = _tracks[trackIds[i]].artists;
+      for (var i = 0; i < tracks.length; i++) {
+        artists = _tracks[tracks[i]].artists;
 
         for (var j = 0; j < artists.length; j++) {
+          subgenres = _artists[artists[j]];
 
-          artist = _artists[artists[j]];
+          for (var k = 0; k < subgenres.length; k++) {
+            genres = getSubgenreFamilies(subgenres[k]);
 
-          for (var k = 0; k < artist.genres.length; k++) {
-            for (var m = 0; m < _genres[_artists[_tracks[trackIds[i]]
-              .artists[j]].genres[k]].family.length; m++) {
-                genre = _genres[artist.genres[k]].family[m];
-                subgenre = artist.genres[k];
+            for (var m = 0; m < genres.length; m++) {
+              genre = genres[m];
+              subgenre = subgenres[k];
 
-                if (genre in _trackData.months[month].genres) {
-                  genres = _trackData.months[month].genres;
-                  subgenres = genres[genre].subgenres;
+              if (genre in trackData.months[month].genres) {
+                monthGenres = trackData.months[month].genres;
+                genreSubgenres = monthGenres[genre].subgenres;
 
-                  genres[genre].total++;
+                monthGenres[genre].total++;
 
-                  if (subgenre in subgenres) {
-                    subgenres[subgenre].total++;
+                if (subgenre in genreSubgenres) {
+                  genreSubgenres[subgenre].total++;
 
-                    if (subgenres[subgenre].artists
-                      .indexOf(artists[j]) === -1) {
-                        subgenres[subgenre].artists.push(artists[j]);
-                      }
-                  } else {
-                    subgenres[subgenre] = {
-                      total: 1,
-                      artists: [artists[j]]
-                    };
+                  if (genreSubgenres[subgenre].artists.indexOf(artists[j]) === -1) {
+                    genreSubgenres[subgenre].artists.push(artists[j]);
                   }
                 } else {
-                  _trackData.months[month].genres[genre] = { total: 1 };
-                  _trackData.months[month].genres[genre].subgenres = {
-                    subgenre: {
-                      total: 1,
-                      artists: [artists[j]]
-                    }
-                  };
+                  genreSubgenres[subgenre] = Object.create(null);
+                  genreSubgenres[subgenre].total = 1;
+                  genreSubgenres[subgenre].artists = [artists[j]];
                 }
+              } else {
+                trackData.months[month].genres[genre] = Object.create(null);
+                trackData.months[month].genres[genre].total = 1;
+                trackData.months[month].genres[genre].subgenres = Object.create(null);
+                trackData.months[month].genres[genre].subgenres[subgenre] = Object.create(null);
+                trackData.months[month].genres[genre].subgenres[subgenre].total = 1;
+                trackData.months[month].genres[genre].subgenres[subgenre].artists = [artists[j]];
               }
             }
+          }
         }
       }
     }
-    console.log('data: ', _trackData);
-  }
 
-  /**
-   *
-   * @example
-   * {
-   *   "indie pop": {
-   *     "family": "pop"
-   *   },
-   *   "indietronica": {},
-   *   "indie rock": {},
-   * }
-   */
-  function getGenreFamilies() {
-    $.getJSON('/js/genre_families.json', function(genres) {
-      for (var i = 0; i < genres.length; i++) {
-        _genreFamilies[genres[i].name] = {
-          family: genres[i].family
-          // pop: genres[i].pop   // popularity
-        };
-      }
-    });
+    localStorage.setObject('trackData', trackData);
+    return trackData;
   }
 
   /**
@@ -494,7 +434,7 @@ var VizifyData = (function($) {
    * @param {string} subgenre for which to retrieve genre family
    * @return {array} array of genre families
    */
-  function getGenreFamilyList(genre) {
+  function getSubgenreFamilies(genre) {
     if (_genreFamilies[genre]) {
       return _genreFamilies[genre].family;
     }
